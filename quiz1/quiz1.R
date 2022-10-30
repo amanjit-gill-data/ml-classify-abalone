@@ -1,6 +1,8 @@
 # QUIZ 1
 # A. GILL
 
+library("ellipse")
+
 # QUESTION 3
 
 n <- 12
@@ -35,8 +37,9 @@ minor_xvals <- c(minor_pt1[1], minor_pt2[1])
 # vector of y-coordinates for minor axis
 minor_yvals <- c(minor_pt1[2], minor_pt2[2])
 
-# plot major and minor axes
-plot(c(major_xvals,minor_xvals), c(major_yvals,minor_yvals), pch=4, col="blue", lwd=2)
+# plot ellipse and major and minor axes
+plot(ellipse(cov2cor(S), centre=c(-1.2, -3.9), t=qt(1-alpha/2, n-1), npoints=1000), pch=".", cex=1)
+points(c(major_xvals,minor_xvals), c(major_yvals,minor_yvals), pch=4, col="blue", lwd=2)
 lines(major_xvals, major_yvals)
 lines(minor_xvals, minor_yvals)
 points(xbar[1], xbar[2], pch=16, col="blue")
@@ -68,7 +71,7 @@ minor_xvals <- c(minor_pt1[1], minor_pt2[1])
 minor_yvals <- c(minor_pt1[2], minor_pt2[2])
 
 # plot major and minor axes
-plot(c(major_xvals,minor_xvals), c(major_yvals,minor_yvals), pch=4, col="blue", lwd=2, xlim=c(-5,2), ylim=c(-7,-1))
+plot(c(major_xvals,minor_xvals), c(major_yvals,minor_yvals), pch=4, col="blue", lwd=2)
 lines(major_xvals, major_yvals)
 lines(minor_xvals, minor_yvals)
 points(xbar[1], xbar[2], pch=16, col="blue")
@@ -92,4 +95,5 @@ x2_ci_high <- c(crossprod(l_x2, xbar)) + sqrt(scale * t(l_x2) %*% S %*% l_x2)
 abline(v=c(x1_ci_low, x1_ci_high))
 abline(h=c(x2_ci_low, x2_ci_high))
 
+# PART D - Bonferroni method to get confidence intervals
 
