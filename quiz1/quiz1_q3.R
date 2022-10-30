@@ -1,11 +1,9 @@
-# QUIZ 1
+# QUIZ 1 - QUESTION 3
 # A. GILL
 
 library("ellipse")
 
 par(mar = c(4, 4, 0.5, 0.5))  
-
-# QUESTION 3
 
 n <- 12
 p = 2
