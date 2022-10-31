@@ -133,5 +133,5 @@ legend(
     legend=c("Solid ellipse: part A", "Dashed ellipse: Part B",
              "Blue dash: projected CI", "Orange dash: Bonferroni CI"),
     bty='n',
-    cex=0.55
+    cex=0.7
 )
