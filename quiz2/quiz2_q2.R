@@ -41,63 +41,53 @@ sigYY <- Sigma[1,1]
 
 (r1.234 <- sqrt(t(sig0) %*% solve(C) %*% sig0 / sigYY))
 
-# PART Ci
+# PART C
 
-# first get eigenvalues and eigenvectors
+# perform eigendecomposition
+eig <- eigen(Sigma)
 
-(eig <- eigen(Sigma))
-
-# 1st and 2nd PC coefficient vectors
-
-(pc1 <- eig$vectors[,1])
-(pc2 <- eig$vectors[,2])
-
-# PART Cii
-
-# first obtain all the variances
+# extract variances and PC vectors
+p <- nrow(Sigma)
 sum_vars <- sum(eig$values)
-var1 <- eig$values[1]
-var2 <- eig$values[2]
-var3 <- eig$values[3]
-var4 <- eig$values[4]
 
-# now compute contributions to total variance
-var_cont1 <- var1/sum_vars * 100
-var_cont2 <- var2/sum_vars * 100
-var_cont3 <- var3/sum_vars * 100
-var_cont4 <- var4/sum_vars * 100
+vars <- c()
+PCs <- list()
+var_conts <- c()
 
-(var_cont12 <- var_cont1 + var_cont2)
-(var_cont123 <- var_cont12 + var_cont3)
-(var_cont1234 <- var_cont123 + var_cont4)
+for (i in 1:p) {
+    vars <- c(vars, eig$values[i])
+    PCs[[i]] <- eig$vectors[,i]
+    var_conts <- c(var_conts, vars[i]/sum_vars*100)
+}
 
-# result: need 3 PCs to explain at least 90% of variability
+PCs
 
-# PART Ciii
+# choose k using 90% variance explained
+var_conts.c <- cumsum(var_conts)
+(min(which(var_conts.c >= 90)))
 
-# Kaiser's rule is equivalent to checking each variance against the average
+# choose k using Kaiser's rule
+# since Sigma isn't standardised (yet), use an alternative definition
+(max(which(vars > mean(vars))))
 
-(avg_var <- sum_vars/4)
+# REDO PCA WITH STANDARDISED SIGMA
 
-# result: only 2 PCs have var > average var
-
-# PART Civ
-
-# correlation matrix is same as standardised covariance matrix
-(Sigma_std <- cov2cor(Sigma))
+# standardised Sigma is same as correlation matrix
+Sigma.std <- cov2cor(Sigma)
 
 # now redo PCA
-(eig_std <- eigen(Sigma_std))
+eig.std <- eigen(Sigma.std)
 
-# compute contributions to total variance
-sum_vars_std <- sum(eig_std$values)
-var1_std <- eig_std$values[1]
-var2_std <- eig_std$values[2]
-var3_std <- eig_std$values[3]
-var4_std <- eig_std$values[4]
-var_cont1_std <- var1_std/sum_vars_std * 100
-var_cont2_std <- var2_std/sum_vars_std * 100
-var_cont3_std <- var3_std/sum_vars_std * 100
-var_cont4_std <- var4_std/sum_vars_std * 100
+# compute variance contribution for each variable
+sum_vars.std <- sum(eig.std$values)
 
-(var_cont_std <- c(var_cont1_std, var_cont2_std, var_cont3_std, var_cont4_std))
+vars.std <- c()
+var_conts.std <- c()
+
+for (i in 1:p) {
+    vars.std <- c(vars.std, eig.std$values[i])
+    var_conts.std <- c(var_conts.std, vars.std[i]/sum_vars.std)
+}
+
+var_conts.std
+
