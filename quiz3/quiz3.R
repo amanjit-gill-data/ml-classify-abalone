@@ -6,8 +6,9 @@
 
 library(CCA)
 library(ggm)
+library(CCP)
 
-# ------------------------------- QUESTION 3 --------------------------------- #
+# QUESTION 3 
 
 meat <- read.csv("price-cons.csv")[,2:5]
 
@@ -19,7 +20,7 @@ pc.cc[c("cor", "xcoef", "ycoef")]
 
 p.perm(P, C, type="Wilks")
 
-# ------------------------------- QUESTION 4 --------------------------------- #
+# QUESTION 4 
 
 n <- nrow(meat)
 p <- ncol(P)
@@ -30,7 +31,7 @@ p.asym(pc.cc$cor, n, p, q, tstat="Hotelling")
 p.asym(pc.cc$cor, n, p, q, tstat="Pillai")
 p.asym(pc.cc$cor, n, p, q, tstat="Roy")
 
-# ------------------------------- QUESTION 6 --------------------------------- #
+# QUESTION 6 
 
 meat.cor <- cor(meat)
 
@@ -62,7 +63,7 @@ meat.mlm <- lm(
 
 summary(meat.mlm)
 
-# ------------------------------- QUESTION 7 --------------------------------- #
+# QUESTION 7 
 
 # see whether standardised data change the hypothesis test results
 # re-use meat data for this
@@ -80,7 +81,7 @@ p.asym(pc.cc.std$cor, n, p, q, tstat="Hotelling")
 p.asym(pc.cc.std$cor, n, p, q, tstat="Pillai")
 p.asym(pc.cc.std$cor, n, p, q, tstat="Roy")
 
-# ------------------------------- QUESTION 9 --------------------------------- #
+# QUESTION 9 
 
 S <- matrix(
     c(
