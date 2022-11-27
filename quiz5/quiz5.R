@@ -126,7 +126,6 @@ ans_a_iv_pOA <- pnorm(-Delta/2)[1]
 
 dump(c("ans_a_iv_pAO", "ans_a_iv_pOA"), file="")
 
-
 # QUESTION 1B - DATA
 
 G <- c('Normal', 'Anxiety', 'Anxiety', 'Obsession', 'Anxiety', 'Obsession', 
@@ -196,9 +195,47 @@ ans_b_iii_pval <- hyp_test$p.value
 
 dump(c("ans_b_iii_teststat", "ans_b_iii_df", "ans_b_iii_pval"), file="")
     
-# QUESTION 1C 
+# QUESTION 1C - SVM TUNING
 
-svm.radial <- svm(Diagnosis ~ ., data=neurotic, cross=10)
-plot(svm.radial, data=neurotic, A~B)
-plot(svm.radial, data=neurotic, B~C)
+Cs <- c(0.5,1,5,10,50)
+gammas <- c(0.01, 0.1, 1, 10)
+
+trials.lin <- data.frame(C=Cs, SVs=NA, TotAcc=NA)
+trials.rad <- data.frame(C=rep(Cs, each=length(gammas)), gamma=gammas, 
+                         SVs=NA, TotAcc=NA)
+
+for (i in 1:nrow(trials.lin)) {
+    svm.lin <- svm(
+        Diagnosis ~ ., data=neurotic, kernel="linear", 
+        cost=trials.lin[i, "C"], cross=10)
+    trials.lin[i,"SVs"] <- svm.lin$tot.nSV
+    trials.lin[i, "TotAcc"] <- svm.lin$tot.accuracy
+}
+
+# total number of radial trials = number of Cs * number of gammas
+for (i in 1:nrow(trials.rad)) {
+    svm.rad <- svm(
+        Diagnosis ~ ., data=neurotic, kernel="radial", 
+        cost=trials.rad[i, "C"], gamma=trials.rad[i, "gamma"], cross=10)
+    trials.rad[i,"SVs"] <- svm.rad$tot.nSV
+    trials.rad[i, "TotAcc"] <- svm.rad$tot.accuracy
+}
+
+trials.lin <- trials.lin[order(-trials.lin$TotAcc, trials.lin$SVs),]
+trials.rad <- trials.rad[order(-trials.rad$TotAcc, trials.rad$SVs),]
+head(trials.rad)
+head(trials.lin)
+
+# choose linear SVM with C = 0.5
+# achieves same total accuracy as top-performing radial SVM
+
+# final model
+svm.tuned <- svm(Diagnosis ~ ., data=neurotic, kernel="linear", 
+                 cost=0.5, cross=10)
+
+# QUESTION 1C - SVM PREDICTION
+
+x.new <- data.frame(A, B, C)
+predict(svm.tuned, newdata=x.new, decision.values=TRUE)
+
 
