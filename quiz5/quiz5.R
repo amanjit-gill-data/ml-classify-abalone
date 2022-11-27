@@ -5,6 +5,11 @@
 #' ---
 #' 
 
+library(MASS)
+library(dplyr)
+library(heplots)
+library(e1071)
+
 # QUESTION 1A - DATA
 
 Sigma <- matrix(
@@ -122,7 +127,7 @@ ans_a_iv_pOA <- pnorm(-Delta/2)[1]
 dump(c("ans_a_iv_pAO", "ans_a_iv_pOA"), file="")
 
 
-# QUESTION 1B
+# QUESTION 1B - DATA
 
 G <- c('Normal', 'Anxiety', 'Anxiety', 'Obsession', 'Anxiety', 'Obsession', 
     'Obsession', 'Obsession', 'Anxiety', 'Normal', 'Anxiety', 'Normal', 
@@ -147,4 +152,53 @@ X <- matrix(
 
 neurotic <- cbind(data.frame(Diagnosis=G), X)
 
+# QUESTION 1B - PART (I)
+
+A <- -0.1
+B <- -1.6
+C <- 1.2
+
+p <- 1/3
+
+# convert diagnosis column to factor
+# to maintain ordering of classes in model results
+neurotic$Diagnosis <- factor(neurotic$Diagnosis, 
+                             levels=c("Normal", "Anxiety", "Obsession"))
+
+# train model
+neurotic.lda <- lda(Diagnosis ~ ., data=neurotic, prior=c(p, p, p))
+
+# make prediction
+x.new <- data.frame(A, B, C)
+probs <- predict(neurotic.lda, newdata=x.new)$posterior
+
+ans_b_i <- c(probs[1,"Normal"], probs[1, "Anxiety"], probs[1, "Obsession"])
+
+dump(c("ans_b_i"), file="")
+
+# QUESTION 1B - PART (II)
+
+cm <- table(Actual=neurotic$Diagnosis, Predicted=predict(neurotic.lda)$class)
+
+ans_b_ii <- matrix(cm, 3, 3)
+
+dump(c("ans_b_ii"), file="")
+
+# QUESTION 1B - PART (III)
+
+hyp_test <- boxM(select(neurotic, -Diagnosis), neurotic$Diagnosis)
+
+ans_b_iii_teststat <- as.numeric(hyp_test$statistic)
+
+ans_b_iii_df <- as.numeric(hyp_test$parameter)
+
+ans_b_iii_pval <- hyp_test$p.value
+
+dump(c("ans_b_iii_teststat", "ans_b_iii_df", "ans_b_iii_pval"), file="")
+    
+# QUESTION 1C 
+
+svm.radial <- svm(Diagnosis ~ ., data=neurotic, cross=10)
+plot(svm.radial, data=neurotic, A~B)
+plot(svm.radial, data=neurotic, B~C)
 
