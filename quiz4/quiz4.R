@@ -5,6 +5,8 @@
 #' ---
 #' 
 
+library(psych)
+
 # QUESTION 3
 
 S <- matrix(
@@ -28,7 +30,7 @@ R <- cov2cor(S)
 
 # QUESTION 4 - PART A
 
-X <- read.csv("../Assignments/quiz4/q4_data.csv")
+X <- read.csv("Assignments/quiz4/q4_data.csv")
 
 # try 1 factor
 # result: 1 factor is NOT sufficient
