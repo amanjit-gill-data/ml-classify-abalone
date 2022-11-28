@@ -229,11 +229,11 @@ head(trials.lin)
 # choose linear SVM with C = 0.5
 # achieves same total accuracy as top-performing radial SVM
 
+# QUESTION 1C - SVM PREDICTION
+
 # final model
 svm.tuned <- svm(Diagnosis ~ ., data=neurotic, kernel="linear", 
                  cost=0.5, cross=10)
-
-# QUESTION 1C - SVM PREDICTION
 
 x.new <- data.frame(A, B, C)
 predict(svm.tuned, newdata=x.new, decision.values=TRUE)
