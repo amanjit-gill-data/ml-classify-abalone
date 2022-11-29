@@ -1,0 +1,94 @@
+---
+title: "Classification and Pricing of Farmed Abalone"
+author: "Amanjit Gill"
+date: "2022-12-05"
+output: 
+    html_notebook:
+        theme: flatly
+---
+
+```{css echo=FALSE}
+
+h1, h2, h3 {
+    font-weight: bold;
+}
+
+h1.title {
+    font-size: 2em;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.2em;
+}
+
+```
+
+
+## 1. Exploratory Analysis
+
+```{r setup, message=FALSE}
+
+library(dplyr)
+
+params <- par(
+    family = "serif",
+    ps = 10.5,
+    mar = c(4.5, 4.5, 1, 1)
+)
+
+
+abalone <- read.csv("abalone.csv")
+
+```
+
+### 1.1 Summary statistics
+
+Statistical summary for each numerical variable.
+```{r summary}
+abalone.num <- abalone %>% select(-Sex)
+summary(abalone.num)
+
+```
+
+RESULTS:
+
+none of the maximum values appear to be out of range, according to sources. however:
+
+min height = 0 (impossible)
+
+all the minimum weights are between 0.1 and 0.4 grams. not sure how realistic it is to catch and measure an abalone that tiny. needs exploration of outliers.
+
+Check for missing values.
+```{r missing values}
+
+nrow(abalone)
+sum(complete.cases(abalone))
+```
+
+RESULT: No missing values; all rows are complete.
+
+### 1.2 Univariate outliers
+```{r outliers}
+
+pdf("1.2.pdf")
+par(
+    family = "serif",
+    ps = 11,
+    mar = c(4.5, 1, 1, 1)
+)
+par("mfrow"=c(4,2))
+
+cols <- colnames(abalone.num)
+
+for (i in 1:ncol(abalone.num)) {
+    boxplot(abalone.num[,i], horizontal = TRUE, xlab = cols[i])
+}
+```
+
+RESULTS:
+
+
