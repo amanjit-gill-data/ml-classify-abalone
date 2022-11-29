@@ -32,24 +32,27 @@ h3 {
 
 ```{r setup, message=FALSE}
 
+library(here)
 library(dplyr)
+library(MVN)
 
-params <- par(
+par(
     family = "serif",
-    ps = 10.5,
-    mar = c(4.5, 4.5, 1, 1)
+    ps = 11,
+    mar = c(4.5, 1, 2, 1)
 )
 
+params <- par(no.readonly = TRUE)
 
 abalone <- read.csv("abalone.csv")
-
+abalone.num <- abalone %>% select(-Sex)
 ```
 
 ### 1.1 Summary statistics
 
 Statistical summary for each numerical variable.
 ```{r summary}
-abalone.num <- abalone %>% select(-Sex)
+
 summary(abalone.num)
 
 ```
@@ -72,23 +75,70 @@ sum(complete.cases(abalone))
 RESULT: No missing values; all rows are complete.
 
 ### 1.2 Univariate outliers
+
 ```{r outliers}
 
 pdf("1.2.pdf")
-par(
-    family = "serif",
-    ps = 11,
-    mar = c(4.5, 1, 1, 1)
-)
+par(params)
 par("mfrow"=c(4,2))
 
 cols <- colnames(abalone.num)
 
-for (i in 1:ncol(abalone.num)) {
-    boxplot(abalone.num[,i], horizontal = TRUE, xlab = cols[i])
+outliers <- c()
+
+for (c in cols) {
+    b <- boxplot(abalone.num[,c], horizontal = TRUE, xlab = c)
+    outliers <- c(outliers, length(b$out))
 }
+
+outliers <- data.frame(cols, outliers, row.names = cols)
+```
+
+RESULTS: 
+
+every numerical variable has some outliers.
+however, for 7 of them, the number of outliers is between 0.5 and 1.5% of the sample size, so it's not clear that they will affect the analysis.
+for the 8th, Rings, there are 278 outliers, 6.7% of the sample size. This may be impactful, and should be confirmed as being so.
+
+we will not remedy the outliers here. we will try transformations first, to see if some of outliers have been pulled in.
+
+### 1.3 Linearity and homoscedasticity
+
+```{r linearity}
+pdf("1.3.pdf")
+par(params)
+
+pairs(abalone.num)
 ```
 
 RESULTS:
 
+non-linear between:
+- all the weights and the length and diameter
+- heteroscedasticity between rings and everything except for height
+
+### 1.4 Normality
+
+```{r normality}
+
+pdf("1.4.pdf")
+par(params)
+par("mfrow"=c(4,2))
+
+for (c in cols) {
+    
+    coldata <- abalone[,c]
+    plot(density(coldata))
+    
+    x <- seq(min(coldata), max(coldata), length=100)
+}
+
+```
+
+Mardia's skewness and kurtosis test
+```{r mardia}
+
+mvn(abalone.num, mvnTest = "mardia", univariateTest = "SW")
+
+```
 
