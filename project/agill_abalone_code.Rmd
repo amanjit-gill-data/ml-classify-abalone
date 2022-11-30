@@ -45,6 +45,9 @@ par(
 params <- par(no.readonly = TRUE)
 
 abalone <- read.csv("abalone.csv")
+
+# list of just the numerical variables
+cols <- colnames(abalone)[-1]
 ```
 
 ### 1.1 Summary statistics
@@ -52,7 +55,7 @@ abalone <- read.csv("abalone.csv")
 Statistical summary for each numerical variable.
 ```{r summary}
 
-summary(abalone.num)
+summary(abalone[cols])
 
 ```
 
@@ -60,14 +63,21 @@ RESULTS:
 
 none of the maximum values appear to be out of range, according to sources. however:
 
-min height = 0 (impossible). remove immediately.
+min height = 0 (impossible).
 
+find out how many there are, compared to how many cases there are in total.
+```{r}
+abalone %>% filter(Height == 0) %>% nrow()
+nrow(abalone)
+```
+
+only 2 out of 4177. not a serious problem with the data. remove.
 ```{r}
 abalone <- abalone %>% filter(Height > 0)
 ```
 
 
-all the minimum weights are between 0.1 and 0.4 grams. not sure how realistic it is to catch and measure an abalone that tiny. needs exploration of outliers.
+all the minimum weights are between 0.1 and 0.4 grams. not sure how realistic it is to catch and measure an abalone that tiny. may be outlier errors, or may be real.
 
 Check for missing values.
 ```{r missing values}
@@ -82,22 +92,24 @@ RESULT: No missing values; all rows are complete.
 
 ```{r outliers}
 
-abalone.num <- abalone %>% select(-Sex)
+boxplots <- function(data, colnames, pars, outfile) {
+    pdf(outfile)
+    par(pars)
+    gridrows <- ceiling(length(colnames)/2)
+    par("mfrow"=c(gridrows, 2))
 
-pdf("1.2.pdf")
-par(params)
-par("mfrow"=c(4,2))
-
-cols <- colnames(abalone.num)
-
-outliers <- c()
-
-for (c in cols) {
-    b <- boxplot(abalone.num[,c], horizontal = TRUE, xlab = c)
-    outliers <- c(outliers, length(b$out))
+    outliers <- c()
+    
+    for (c in colnames) {
+        b <- boxplot(data[,c], horizontal = TRUE, xlab = c)
+        outliers <- c(outliers, length(b$out))
+    }
+    
+    return(data.frame(outliers, row.names = colnames))
 }
 
-outliers <- data.frame(cols, outliers, row.names = cols)
+outliers <- boxplots(abalone, cols, params, "1.2.pdf")
+
 ```
 
 RESULTS: 
@@ -114,7 +126,7 @@ we will not remedy the outliers here. we will try transformations first, to see 
 pdf("1.3.pdf")
 par(params)
 
-pairs(abalone.num)
+pairs(abalone[cols])
 ```
 
 RESULTS:
@@ -149,7 +161,7 @@ density_charts(abalone, cols, params, "1.4.pdf")
 Mardia's skewness and kurtosis test
 ```{r mardia}
 
-mvn_test <- mvn(abalone.num, mvnTest = "mardia", univariateTest = "SW")
+mvn_test <- mvn(abalone[cols], mvnTest = "mardia", univariateTest = "SW")
 
 ```
 
@@ -184,7 +196,7 @@ reflect <- function(vals) {
 }
 
 
-abalone.num.t <- abalone.num %>% mutate(
+abalone.t <- abalone[cols] %>% mutate(
     Length = sqrt(reflect(Length)),
     Diameter = sqrt(reflect(Diameter)),
     Height = log(Height),
@@ -201,8 +213,8 @@ abalone.num.t <- abalone.num %>% mutate(
 recheck normality
 ```{r}
 
-density_charts(abalone.num.t, cols, params, "1.5.pdf")
-mvn_test.t <- mvn(abalone.num.t, mvnTest = "mardia", univariateTest = "SW")
+density_charts(abalone.t, cols, params, "1.5.pdf")
+mvn_test.t <- mvn(abalone.t, mvnTest = "mardia", univariateTest = "SW")
 ```
 
 still fails all tests, but this is because the tests are more likely to fail at larger N for small deviations. visually, they look mostly normal, which matters more than the hyp test.
@@ -231,7 +243,36 @@ kurt[,"Ratio"] <- abs(kurt[,2]/kurt[,1])
 
 first recheck how many outliers remain after transformation.
 
+```{r}
+outliers.t <- boxplots(abalone.t, cols, params, "1.6.pdf")
+data.frame(outliers, outliers.t)
+```
 
+RESULTS:
+
+new boxplots show far less congestion of outliers at the extremities, except for Height. this is confirmed by the comparison table, which shows a remarkable reduction in the number of outliers for every transformed variable, except, as expected, for Height. For all variables bar Height and Rings, the number of outliers is now single digits, meaning the transformations have allowed us to salvage more data points for the upcoming prediction activities.
+
+remove remaining outliers.
+```{r}
+    for (c in cols) {
+        outs <- boxplot.stats(abalone.t[,c])$out
+        abalone.t <- abalone.t %>% filter(!(abalone.t[,c] %in% outs))
+    }
+```
+
+1.7 Check
+
+# final reexamination to confirm achievement of aims.
+```{r}
+density_charts(abalone.t, cols, params, "1.7.pdf")
+
+sk.final <- mvn(abalone.t, mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(Skew, Kurtosis)
+
+```
+
+RESULT: skewness and kurtosis are now all now below a magnitude of 1.
+
+despite failure of SW test, can now be confident of univariate normality.
 
 
 
