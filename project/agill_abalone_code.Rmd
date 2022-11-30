@@ -45,7 +45,6 @@ par(
 params <- par(no.readonly = TRUE)
 
 abalone <- read.csv("abalone.csv")
-abalone.num <- abalone %>% select(-Sex)
 ```
 
 ### 1.1 Summary statistics
@@ -61,7 +60,12 @@ RESULTS:
 
 none of the maximum values appear to be out of range, according to sources. however:
 
-min height = 0 (impossible)
+min height = 0 (impossible). remove immediately.
+
+```{r}
+abalone <- abalone %>% filter(Height > 0)
+```
+
 
 all the minimum weights are between 0.1 and 0.4 grams. not sure how realistic it is to catch and measure an abalone that tiny. needs exploration of outliers.
 
@@ -77,6 +81,8 @@ RESULT: No missing values; all rows are complete.
 ### 1.2 Univariate outliers
 
 ```{r outliers}
+
+abalone.num <- abalone %>% select(-Sex)
 
 pdf("1.2.pdf")
 par(params)
@@ -113,32 +119,120 @@ pairs(abalone.num)
 
 RESULTS:
 
-non-linear between:
-- all the weights and the length and diameter
-- heteroscedasticity between rings and everything except for height
+non-linear between all the weights and the length and diameter
+
+heteroscedasticity between rings and everything except for height
+
+oval shape implies univariate normality of whole, shucked and viscera weights
+others are too hard to tell
+
 
 ### 1.4 Normality
 
 ```{r normality}
 
-pdf("1.4.pdf")
-par(params)
-par("mfrow"=c(4,2))
+density_charts <- function(data, colnames, pars, outfile) {
+    pdf(outfile)
+    par(pars)
+    gridrows <- ceiling(length(colnames)/2)
+    par("mfrow"=c(gridrows, 2))
 
-for (c in cols) {
-    
-    coldata <- abalone[,c]
-    plot(density(coldata))
-    
-    x <- seq(min(coldata), max(coldata), length=100)
+    for (c in colnames) {
+        plot(density(data[,c]), xlab=c)
+    }
 }
+
+density_charts(abalone, cols, params, "1.4.pdf")
 
 ```
 
 Mardia's skewness and kurtosis test
 ```{r mardia}
 
-mvn(abalone.num, mvnTest = "mardia", univariateTest = "SW")
+mvn_test <- mvn(abalone.num, mvnTest = "mardia", univariateTest = "SW")
 
 ```
+
+### 1.5 Transformations
+
+moderately different from normal: square root
+
+substantially different from normal: logarithm
+
+extremely different from normal: inverse
+
+
+apply following transformations:
+
+|Variable|Transformation|
+|:--------|:--------------|
+|Length|Reflect and square root|
+|Diameter|Reflect and square root|
+|Height|Logarithm|
+|Whole weight|Square root|
+|Shucked weight|Square root|
+|Viscera weight|Square root|
+|Shell weight|Square root|
+|Rings|Square root|
+
+
+```{r}
+
+reflect <- function(vals) {
+    maxval <- max(vals)
+    maxval+1 - vals
+}
+
+
+abalone.num.t <- abalone.num %>% mutate(
+    Length = sqrt(reflect(Length)),
+    Diameter = sqrt(reflect(Diameter)),
+    Height = log(Height),
+    Whole.weight = sqrt(Whole.weight),
+    Shucked.weight = sqrt(Shucked.weight),
+    Viscera.weight = sqrt(Viscera.weight),
+    Shell.weight = sqrt(Shell.weight),
+    Rings = sqrt(Rings),
+    .keep = "unused"
+)
+
+```
+
+recheck normality
+```{r}
+
+density_charts(abalone.num.t, cols, params, "1.5.pdf")
+mvn_test.t <- mvn(abalone.num.t, mvnTest = "mardia", univariateTest = "SW")
+```
+
+still fails all tests, but this is because the tests are more likely to fail at larger N for small deviations. visually, they look mostly normal, which matters more than the hyp test.
+
+much improved skewness - very small compared to original data
+
+for kurtosis, most variables have gone from slightly positive (too peaked) to slightly negative (too flat), but the magnitudes are 1 or below, with the exception of Height, which has experienced a marked improvement (from 76.62 to 4.57).
+
+kurtosis generally does not affect estimates of variance for large sample sizes, so these transformations are considered acceptable.
+
+table comparing original skewness and new skewness
+```{r}
+skew <- data.frame(mvn_test$Descriptives$Skew, mvn_test.t$Descriptives$Skew)
+skew[,"Ratio"] <- abs(skew[,2]/skew[,1])
+
+```
+
+table comparing original kurtosis and new kurtosis
+```{r}
+kurt <- data.frame(mvn_test$Descriptives$Kurtosis, mvn_test.t$Descriptives$Kurtosis)
+kurt[,"Ratio"] <- abs(kurt[,2]/kurt[,1])
+```
+
+
+1.6 Removal of outliers
+
+first recheck how many outliers remain after transformation.
+
+
+
+
+
 
