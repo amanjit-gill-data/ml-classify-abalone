@@ -35,6 +35,8 @@ h3 {
 library(here)
 library(dplyr)
 library(MVN)
+library(heplots)
+library(MASS)
 
 par(
     family = "serif",
@@ -196,7 +198,7 @@ reflect <- function(vals) {
 }
 
 
-abalone.t <- abalone[cols] %>% mutate(
+abalone.t <- abalone %>% mutate(
     Length = sqrt(reflect(Length)),
     Diameter = sqrt(reflect(Diameter)),
     Height = log(Height),
@@ -214,7 +216,7 @@ recheck normality
 ```{r}
 
 density_charts(abalone.t, cols, params, "1.5.pdf")
-mvn_test.t <- mvn(abalone.t, mvnTest = "mardia", univariateTest = "SW")
+mvn_test.t <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")
 ```
 
 still fails all tests, but this is because the tests are more likely to fail at larger N for small deviations. visually, they look mostly normal, which matters more than the hyp test.
@@ -229,17 +231,18 @@ table comparing original skewness and new skewness
 ```{r}
 skew <- data.frame(mvn_test$Descriptives$Skew, mvn_test.t$Descriptives$Skew)
 skew[,"Ratio"] <- abs(skew[,2]/skew[,1])
-
+skew
 ```
 
 table comparing original kurtosis and new kurtosis
 ```{r}
 kurt <- data.frame(mvn_test$Descriptives$Kurtosis, mvn_test.t$Descriptives$Kurtosis)
 kurt[,"Ratio"] <- abs(kurt[,2]/kurt[,1])
+kurt
 ```
 
 
-1.6 Removal of outliers
+### 1.6 Removal of outliers
 
 first recheck how many outliers remain after transformation.
 
@@ -254,25 +257,80 @@ new boxplots show far less congestion of outliers at the extremities, except for
 
 remove remaining outliers.
 ```{r}
-    for (c in cols) {
-        outs <- boxplot.stats(abalone.t[,c])$out
-        abalone.t <- abalone.t %>% filter(!(abalone.t[,c] %in% outs))
-    }
+for (c in cols) {
+    outs <- boxplot.stats(abalone.t[,c])$out
+    abalone.t <- abalone.t %>% filter(!(abalone.t[,c] %in% outs))
+}
 ```
 
-1.7 Check
+### 1.7 Check
 
-# final reexamination to confirm achievement of aims.
+final reexamination to confirm achievement of aims.
 ```{r}
 density_charts(abalone.t, cols, params, "1.7.pdf")
 
-sk.final <- mvn(abalone.t, mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(Skew, Kurtosis)
-
+sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(c(Skew, Kurtosis))
+sk.final
 ```
 
 RESULT: skewness and kurtosis are now all now below a magnitude of 1.
 
 despite failure of SW test, can now be confident of univariate normality.
+
+## 2. Predicting Abalone Sex
+
+2.1. Check equal covariances assumption.
+
+```{r}
+
+predictors = c("Length", "Diameter", "Height")
+boxM(abalone.t[,predictors], abalone.t[,"Sex"])
+
+```
+RESULT: Highly significant. Covariances are NOT equal. Therefore, start with QDA, not LDA.
+
+2.2 Quadratic discriminant analysis
+
+```{r}
+cm.qda <- table(
+    truth=abalone.t$Sex, 
+    prediction=qda(Sex ~ Length+Diameter+Height, data=abalone.t, CV=TRUE)$class
+)
+
+accuracy.qda <- sum(diag(cm.qda))/sum(cm.qda)
+accuracy.qda
+```
+RESULT: Only half of the cases were predicted correctly.
+
+2.3 Linear discriminant analysis
+
+```{r}
+cm.lda <- table(
+    truth=abalone.t$Sex,
+    prediction=lda(Sex ~ Length+Diameter+Height, data=abalone.t, CV=TRUE)$class
+)
+
+accuracy.lda <- sum(diag(cm.lda))/sum(cm.lda)
+accuracy.lda
+```
+
+RESULT: LDA performs slightly better. Examine classes for which it performs well:
+```{r}
+cm.lda
+
+accuracy.lda.F <- cm.lda["F","F"]/sum(cm.lda["F",])
+accuracy.lda.I <- cm.lda["I","I"]/sum(cm.lda["I",])
+accuracy.lda.M <- cm.lda["M","M"]/sum(cm.lda["M",])
+
+
+```
+
+RESULT: Very poor performance for predicting females. Four-fifths of females will be classified incorrectly. 
+
+Approximately two-thirds correct predictions for infants and males. 
+
+2.4 Support vector machine
+
 
 
 
