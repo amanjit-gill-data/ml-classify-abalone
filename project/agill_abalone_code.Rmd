@@ -37,6 +37,7 @@ library(dplyr)
 library(MVN)
 library(heplots)
 library(MASS)
+library(e1071)
 
 par(
     family = "serif",
@@ -279,6 +280,12 @@ despite failure of SW test, can now be confident of univariate normality.
 
 ## 2. Predicting Abalone Sex
 
+first convert response variable to factor
+```{r}
+abalone.t <- abalone.t %>% mutate(Sex=factor(Sex, levels=c("I", "F", "M")))
+```
+
+
 2.1. Check equal covariances assumption.
 
 ```{r}
@@ -318,10 +325,9 @@ RESULT: LDA performs slightly better. Examine classes for which it performs well
 ```{r}
 cm.lda
 
-accuracy.lda.F <- cm.lda["F","F"]/sum(cm.lda["F",])
 accuracy.lda.I <- cm.lda["I","I"]/sum(cm.lda["I",])
+accuracy.lda.F <- cm.lda["F","F"]/sum(cm.lda["F",])
 accuracy.lda.M <- cm.lda["M","M"]/sum(cm.lda["M",])
-
 
 ```
 
@@ -329,9 +335,60 @@ RESULT: Very poor performance for predicting females. Four-fifths of females wil
 
 Approximately two-thirds correct predictions for infants and males. 
 
-2.4 Support vector machine
+2.4 Support vector machine with linear kernel
+
+```{r}
+svm.lin <- tune.svm(
+    Sex ~ Length+Diameter+Height, 
+    data=abalone.t,
+    kernel="linear",
+    cost=c(0.1, 1, 5, 10)
+)
+
+accuracy.svm.lin <- 1 - svm.lin$best.performance
+accuracy.svm.lin
+```
+
+RESULT: Not better than LDA.
+
+2.5 Support vector machine with radial kernel
+
+```{r}
+
+svm.rad <- tune.svm(
+    Sex ~ Length+Diameter+Height, 
+    data=abalone.t,
+    kernel="radial",
+    gamma=c(0.1, 1, 5, 10),
+    cost=c(0.1, 1, 5, 10)
+)
+
+accuracy.svm.rad <- 1 - svm.rad$best.performance
+accuracy.svm.rad
+
+svm.rad$best.parameters
+```
+
+RESULT: About the same as LDA. Slightly better than linear kernel.
+
+compute accuracy of radial SVM.
 
 
+
+
+
+```{r}
+mod <- svm(
+        Sex ~ Length+Diameter+Height, 
+        data=abalone.t,
+        kernel="radial",
+        gamma=10,
+        cost=1,
+    )
+
+plot(mod, data=abalone.t, Length~Diameter)
+
+```
 
 
 
