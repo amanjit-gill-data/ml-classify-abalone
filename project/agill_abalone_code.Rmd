@@ -305,34 +305,45 @@ RESULT: Highly significant. Covariances are NOT equal. Therefore, start with QDA
 first try qda due to unequal variances.
 
 ```{r}
-cm.qda <- table(
-    truth=abalone.t$Sex, 
-    prediction=qda(Sex ~ Length+Diameter+Height, data=abalone.t, CV=TRUE)$class
-)
 
-accuracy.qda <- sum(diag(cm.qda))/sum(cm.qda)
-accuracy.qda
+cm.da <- function(func, truevals, formula, data) {
+    
+    cm <- table(truth=truevals, 
+                prediction=func(formula, data, CV=TRUE)$class
+    )
+    
+    acc <- sum(diag(cm))/sum(cm)
+    
+    return (list(cm=cm, acc=acc))
+}
+
+cm.da(qda, abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t)
+
 ```
 RESULT: Only half of the cases were predicted correctly.
 
 now lda because qda results are bad.
 ```{r}
-cm.lda <- table(
-    truth=abalone.t$Sex,
-    prediction=lda(Sex ~ Length+Diameter+Height, data=abalone.t, CV=TRUE)$class
-)
-
-accuracy.lda <- sum(diag(cm.lda))/sum(cm.lda)
-accuracy.lda
+cm.lda <- cm.da(lda, abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t)
+cm.lda
 ```
 
 RESULT: LDA performs slightly better. Examine classes for which it performs well:
 ```{r}
-cm.lda
+acc.by.class <- function(cm) {
+    
+    totalcases <- sum(cm)
+    
+    acclist <- list()
+    
+    for (c in colnames(cm)) {
+        acclist[c] <- cm[c,c]/sum(cm[c,])
+    }
+    
+    return (acclist)
+}
 
-accuracy.lda.I <- cm.lda["I","I"]/sum(cm.lda["I",])
-accuracy.lda.F <- cm.lda["F","F"]/sum(cm.lda["F",])
-accuracy.lda.M <- cm.lda["M","M"]/sum(cm.lda["M",])
+acc.by.class(cm.lda$cm)
 
 ```
 
@@ -344,14 +355,26 @@ Approximately two-thirds correct predictions for infants and males.
 
 first try linear kernel
 ```{r}
-svm.lin <- tune.svm(
-    Sex ~ Length+Diameter+Height, 
-    data=abalone.t,
-    kernel="linear",
-    cost=c(0.1, 1, 5, 10)
-)
+svm.and.cm <- function(truevals, formula, data, kernel, cost, gamma=NULL) {
+    
+    best.svm <- tune.svm(formula, data=data, kernel=kernel, 
+                         cost=cost, gamma=gamma)$best.model
+    
+    cm <- table(
+        truth=truevals,
+        prediction=fitted(best.svm)
+    )
+    
+    acc <- sum(diag(cm))/sum(cm)
+    
+    return (list(bestmodel=best.svm, cm=cm, acc=acc))
+}
 
-1 - svm.lin$best.performance
+svm.lin <- svm.and.cm(abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t,
+                      kernel="linear", cost=c(0.1, 1, 10))
+
+svm.lin$acc
+
 ```
 
 RESULT: Not better than LDA.
@@ -359,28 +382,19 @@ RESULT: Not better than LDA.
 now try radial kernel
 ```{r}
 
-svm.rad <- tune.svm(
-    Sex ~ Length+Diameter+Height, 
-    data=abalone.t,
-    kernel="radial",
-    gamma=c(0.1, 1, 5, 10),
-    cost=c(0.1, 1, 5, 10)
-)
+svm.rad <- svm.and.cm(abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t,
+                      kernel="radial", cost=c(0.1, 1, 10), gamma=c(0.1, 1, 10))
 
-1 - svm.rad$best.performance
+svm.rad$acc
 
 ```
 
-RESULT: About the same as LDA.
+RESULT: About the same as LDA, but slightly higher.
 
 compute accuracy of radial SVM for each class.
 ```{r}
 
-cm.svm <- table(truth=abalone.t$Sex, prediction=fitted(svm.rad$best.model))
-
-accuracy.svm.I <- cm.svm["I","I"]/sum(cm.svm["I",])
-accuracy.svm.F <- cm.svm["F","F"]/sum(cm.svm["F",])
-accuracy.svm.M <- cm.svm["M","M"]/sum(cm.svm["M",])
+acc.by.class(svm.rad$cm)
 ```
 
 Terrible accuracy for females - 7%. 
@@ -417,50 +431,34 @@ RESULT: Good separation of I from F and M, but still considerable overlap of F a
 
 QDA
 ```{r}
-I.notI <- abalone.t %>% mutate(Sex = gsub("[F,M]", "NotI", Sex))
-I.notI <- I.notI %>% mutate(Sex=factor(Sex, levels=c("I", "NotI")))
+I.notI <- abalone.t %>% mutate(Sex = gsub("[F,M]", "NotI", Sex)) %>%
+    mutate(Sex=factor(Sex, levels=c("I", "NotI")))
 
-cm.I.notI <- table(
-    truth=I.notI$Sex, 
-    prediction=qda(Sex ~ Length+Diameter+Height, data=I.notI, CV=TRUE)$class
-)
-
-sum(diag(cm.I.notI))/sum(cm.I.notI)
+cm.qda.I <- cm.da(qda, I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI)
+cm.qda.I$acc
 
 ```
 LDA
 ```{r}
-cm.I.notI <- table(
-    truth=I.notI$Sex, 
-    prediction=lda(Sex ~ Length+Diameter+Height, data=I.notI, CV=TRUE)$class
-)
-
-sum(diag(cm.I.notI))/sum(cm.I.notI)
+cm.lda.I <- cm.da(lda, I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI)
+cm.lda.I$acc
 ```
 
 SVM linear kernel
 ```{r}
-svm.lin <- tune.svm(
-    Sex ~ Length+Diameter+Height, 
-    data=I.notI,
-    kernel="linear",
-    cost=c(0.1, 1, 5, 10)
-)
 
-1 - svm.lin$best.performance
+svm.lin.I <- svm.and.cm(I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI,
+                      kernel="linear", cost=c(0.1, 1, 10))
+
+svm.lin.I$acc
 ```
 
 SVM radial kernel
 ```{r}
-svm.rad <- tune.svm(
-    Sex ~ Length+Diameter+Height, 
-    data=I.notI,
-    kernel="radial",
-    gamma=c(0.1, 1, 5, 10),
-    cost=c(0.1, 1, 5, 10)
-)
+svm.rad.I <- svm.and.cm(I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI,
+                      kernel="radial", cost=c(0.1, 1, 10), gamma=c(0.1, 1, 10))
 
-1 - svm.rad$best.performance
+svm.rad.I$acc
 ```
 
 RESULTS: Best performance is SVM Radial.
@@ -477,21 +475,15 @@ This can be used as a threshold between I and notI.
 ```{r}
 justI <- I.notI %>% filter(Sex == "I")
 threshold <- quantile(justI$Rings)["75%"]
-```
 
-
-
-
-
-```{r}
 lowR <- I.notI %>% filter(Rings <= threshold)
 highR <- I.notI %>% filter(Rings > threshold)
 
-res <- rbind(table(lowR$Sex), table(highR$Sex))
-row.names(res) <- c("Rings<=threshold", "Rings>threshold")
+low.high <- rbind(table(lowR$Sex), table(highR$Sex))
+row.names(low.high) <- c("Rings<=threshold", "Rings>threshold")
 
-res <- cbind(res, proportionI=res[,1]/rowSums(res))
-res
+low.high <- cbind(low.high, proportionI=low.high[,1]/rowSums(low.high))
+low.high
 ```
 
 RESULT:
@@ -506,4 +498,62 @@ if high Rings, class = NotI
 if low Rings, class = use classifier (SVM Radial)
 
 ### 2.6 F vs Not F
+
+```{r}
+F.notF <- abalone.t %>% mutate(Sex = gsub("[I,M]", "NotF", Sex)) %>%
+    mutate(Sex=factor(Sex, levels=c("F", "NotF")))
+
+cm.qda.F <- cm.da(qda, F.notF$Sex, Sex ~ Length+Diameter+Height, F.notF)
+
+cm.lda.F <- cm.da(lda, F.notF$Sex, Sex ~ Length+Diameter+Height, F.notF)
+
+svm.lin.F <- svm.and.cm(F.notF$Sex, Sex ~ Length+Diameter+Height, F.notF,
+                      kernel="linear", cost=c(0.1, 1, 10))
+
+svm.rad.F <- svm.and.cm(F.notF$Sex, Sex ~ Length+Diameter+Height, F.notF,
+                      kernel="radial", cost=c(0.1, 1, 10), gamma=c(0.1, 1, 10))
+
+rbind(qda=cm.qda.F$acc, lda=cm.lda.F$acc, svm.lin=svm.lin.F$acc,
+      svm.rad=svm.rad.F$acc)
+
+```
+
+RESULT: SVM Radial is best model. Reasonable performance at nearly 70%. 
+
+See if Rings can help like with infants. Not likely, but worth a try.
+```{r}
+sex_boxplots(F.notF, c("Rings"), params, "2.6.pdf")
+```
+
+RESULT: Too much overlap, not much scope for improvement. Stick with SVM Radial.
+
+### 2.7 M vs Not M
+
+```{r}
+M.notM <- abalone.t %>% mutate(Sex = gsub("[I,F]", "NotM", Sex)) %>%
+    mutate(Sex=factor(Sex, levels=c("M", "NotM")))
+
+cm.qda.M <- cm.da(qda, M.notM$Sex, Sex ~ Length+Diameter+Height, M.notM)
+
+cm.lda.M <- cm.da(lda, M.notM$Sex, Sex ~ Length+Diameter+Height, M.notM)
+
+svm.lin.M <- svm.and.cm(M.notM$Sex, Sex ~ Length+Diameter+Height, M.notM,
+                      kernel="linear", cost=c(0.1, 1, 10))
+
+svm.rad.M <- svm.and.cm(M.notM$Sex, Sex ~ Length+Diameter+Height, M.notM,
+                      kernel="radial", cost=c(0.1, 1, 10), gamma=c(0.1, 1, 10))
+
+rbind(qda=cm.qda.M$acc, lda=cm.lda.M$acc, svm.lin=svm.lin.M$acc,
+      svm.rad=svm.rad.M$acc)
+```
+RESULT: SVM Radial gives best performance. But poorer than for F vs not F.
+
+See if Rings can help like with infants. Not likely, but worth a try.
+```{r}
+sex_boxplots(M.notM, c("Rings"), params, "2.7.pdf")
+```
+
+RESULT: Considerable overlap, not much scope for improvement. Stick with SVM Radial.
+
+
 
