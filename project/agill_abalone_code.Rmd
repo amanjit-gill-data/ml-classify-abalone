@@ -33,11 +33,14 @@ h3 {
 ```{r setup, message=FALSE}
 
 library(here)
-library(dplyr)
 library(MVN)
 library(heplots)
-library(MASS)
 library(e1071)
+library(MASS)
+library(dplyr)
+
+select <- dplyr::select
+
 
 par(
     family = "serif",
@@ -270,7 +273,8 @@ final reexamination to confirm achievement of aims.
 ```{r}
 density_charts(abalone.t, cols, params, "1.7.pdf")
 
-sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(c(Skew, Kurtosis))
+sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(Skew, Kurtosis)
+
 sk.final
 ```
 
@@ -286,7 +290,7 @@ abalone.t <- abalone.t %>% mutate(Sex=factor(Sex, levels=c("I", "F", "M")))
 ```
 
 
-2.1. Check equal covariances assumption.
+### 2.1. Check equal covariances assumption.
 
 ```{r}
 
@@ -296,7 +300,9 @@ boxM(abalone.t[,predictors], abalone.t[,"Sex"])
 ```
 RESULT: Highly significant. Covariances are NOT equal. Therefore, start with QDA, not LDA.
 
-2.2 Quadratic discriminant analysis
+### 2.2 Discriminant analysis
+
+first try qda due to unequal variances.
 
 ```{r}
 cm.qda <- table(
@@ -309,8 +315,7 @@ accuracy.qda
 ```
 RESULT: Only half of the cases were predicted correctly.
 
-2.3 Linear discriminant analysis
-
+now lda because qda results are bad.
 ```{r}
 cm.lda <- table(
     truth=abalone.t$Sex,
@@ -335,8 +340,9 @@ RESULT: Very poor performance for predicting females. Four-fifths of females wil
 
 Approximately two-thirds correct predictions for infants and males. 
 
-2.4 Support vector machine with linear kernel
+### 2.3 Support vector machine
 
+first try linear kernel
 ```{r}
 svm.lin <- tune.svm(
     Sex ~ Length+Diameter+Height, 
@@ -345,14 +351,12 @@ svm.lin <- tune.svm(
     cost=c(0.1, 1, 5, 10)
 )
 
-accuracy.svm.lin <- 1 - svm.lin$best.performance
-accuracy.svm.lin
+1 - svm.lin$best.performance
 ```
 
 RESULT: Not better than LDA.
 
-2.5 Support vector machine with radial kernel
-
+now try radial kernel
 ```{r}
 
 svm.rad <- tune.svm(
@@ -363,32 +367,143 @@ svm.rad <- tune.svm(
     cost=c(0.1, 1, 5, 10)
 )
 
-accuracy.svm.rad <- 1 - svm.rad$best.performance
-accuracy.svm.rad
+1 - svm.rad$best.performance
 
-svm.rad$best.parameters
 ```
 
-RESULT: About the same as LDA. Slightly better than linear kernel.
+RESULT: About the same as LDA.
 
-compute accuracy of radial SVM.
+compute accuracy of radial SVM for each class.
+```{r}
+
+cm.svm <- table(truth=abalone.t$Sex, prediction=fitted(svm.rad$best.model))
+
+accuracy.svm.I <- cm.svm["I","I"]/sum(cm.svm["I",])
+accuracy.svm.F <- cm.svm["F","F"]/sum(cm.svm["F",])
+accuracy.svm.M <- cm.svm["M","M"]/sum(cm.svm["M",])
+```
+
+Terrible accuracy for females - 7%. 
+
+But better accuracy for infants and males (above 70%) than QDA.
+
+### 2.4 Diagnostics to understand poor performance of models
+```{r}
+sex_boxplots <- function(data, colnames, pars, outfile) {
+    pdf(outfile)
+    par(params)
+    par("mfrow"=c(length(colnames), 1))
+    
+    for (c in colnames) {
+        boxplot(data[,c] ~ data[,"Sex"], xlab=c)
+    }
+}
+
+sex_boxplots(abalone.t, predictors, params, "2.4.pdf")
+```
+
+RESULTS: Overlap between F and M for all three predictors. This may explain poor performancce of F predictions. Classifiers all seem to favour M over F. Infant data are largely separated from M and F, explaining why performance for I is consistently better for all classifiers.
+
+So how do we separate M cases from F cases?
+
+How about age (Rings)?
+```{r}
+sex_boxplots(abalone.t, c("Rings"), params, "2.4a.pdf")
+```
+
+RESULT: Good separation of I from F and M, but still considerable overlap of F and M. F is completely subsumed by M, and even has nearly the same median.
+
+### 2.5 I vs Not I
+
+QDA
+```{r}
+I.notI <- abalone.t %>% mutate(Sex = gsub("[F,M]", "NotI", Sex))
+I.notI <- I.notI %>% mutate(Sex=factor(Sex, levels=c("I", "NotI")))
+
+cm.I.notI <- table(
+    truth=I.notI$Sex, 
+    prediction=qda(Sex ~ Length+Diameter+Height, data=I.notI, CV=TRUE)$class
+)
+
+sum(diag(cm.I.notI))/sum(cm.I.notI)
+
+```
+LDA
+```{r}
+cm.I.notI <- table(
+    truth=I.notI$Sex, 
+    prediction=lda(Sex ~ Length+Diameter+Height, data=I.notI, CV=TRUE)$class
+)
+
+sum(diag(cm.I.notI))/sum(cm.I.notI)
+```
+
+SVM linear kernel
+```{r}
+svm.lin <- tune.svm(
+    Sex ~ Length+Diameter+Height, 
+    data=I.notI,
+    kernel="linear",
+    cost=c(0.1, 1, 5, 10)
+)
+
+1 - svm.lin$best.performance
+```
+
+SVM radial kernel
+```{r}
+svm.rad <- tune.svm(
+    Sex ~ Length+Diameter+Height, 
+    data=I.notI,
+    kernel="radial",
+    gamma=c(0.1, 1, 5, 10),
+    cost=c(0.1, 1, 5, 10)
+)
+
+1 - svm.rad$best.performance
+```
+
+RESULTS: Best performance is SVM Radial.
+
+But infants should theoretically have fewer rings than adult f/m. So can Rings help us separate I from notI?
+```{r}
+sex_boxplots(I.notI, c("Rings"), params, "2.5.pdf")
+
+```
+
+RESULT: Can see that IQR for infants ends where IQR for adults starts.
+
+This can be used as a threshold between I and notI.
+```{r}
+justI <- I.notI %>% filter(Sex == "I")
+threshold <- quantile(justI$Rings)["75%"]
+```
 
 
 
 
 
 ```{r}
-mod <- svm(
-        Sex ~ Length+Diameter+Height, 
-        data=abalone.t,
-        kernel="radial",
-        gamma=10,
-        cost=1,
-    )
+lowR <- I.notI %>% filter(Rings <= threshold)
+highR <- I.notI %>% filter(Rings > threshold)
 
-plot(mod, data=abalone.t, Length~Diameter)
+res <- rbind(table(lowR$Sex), table(highR$Sex))
+row.names(res) <- c("Rings<=threshold", "Rings>threshold")
 
+res <- cbind(res, proportionI=res[,1]/rowSums(res))
+res
 ```
 
+RESULT:
 
+For high Rings, nearly 88% of cases are not I. This is a remarkable result because it means that for high Rings, simply allocating it to NotI works better than the classifiers.
+
+By contrast, for low Rings, approx half of cases are I, and half are not I, meaning that for low Rings, the physical dimensions (length, etc) perform better.
+
+This leaves us with the following algorithm:
+
+if high Rings, class = NotI
+if low Rings, class = use classifier (SVM Radial)
+
+### 2.6 F vs Not F
 
