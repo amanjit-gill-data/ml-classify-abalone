@@ -619,25 +619,100 @@ predict_wts <- function (mlm, datacols) {
   return (apply(datacols, 1, predict_one, b=mlm$b, coeffs=mlm$coeffs))
 }
 
-shucked.pred <- predict_wts(mlr.sh, abalone.t[,predictors])
-shucked.actual <- abalone.t[,"Shucked.weight"]
+shucked.pred.mlr <- predict_wts(mlr.sh, abalone.t[,predictors])
+shucked.actual <- abalone.t$Shucked.weight
 
-plot(shucked.actual, shucked.pred); abline(a=0,b=1)
+plot(shucked.actual, shucked.pred.mlr); abline(a=0,b=1)
 ```
 now viscera.
 ```{r}
-viscera.pred <- predict_wts(mlr.vi, abalone.t[,predictors])
-viscera.actual <- abalone.t[,"Viscera.weight"]
+viscera.pred.mlr <- predict_wts(mlr.vi, abalone.t[,predictors])
+viscera.actual <- abalone.t$Viscera.weight
 
-plot(viscera.actual, viscera.pred); abline(a=0,b=1)
+plot(viscera.actual, viscera.pred.mlr); abline(a=0,b=1)
 ```
 
 ### 3.2 MLR with PCs
 
+First do PCA on IVs
 ```{r}
+
+S <- cov(abalone.t %>% select(Length, Diameter, Height))
+
+eig <- eigen(S)
+
+p <- nrow(S)
+sum_vars <- sum(eig$values)
+
+vars <- c()
+PCs <- list()
+var_conts <- c()
+
+for (i in 1:p) {
+  vars <- c(vars, eig$values[i])
+  PCs[[i]] <- eig$vectors[,i]
+  var_conts <- c(var_conts, vars[i]/sum_vars * 100)
+}
+
+# choose k using 90% variance explained
+
+var_conts.c <- cumsum(var_conts)
+(min(which(var_conts.c >= 90)))
 
 ```
 
+RESULT: Choose just the first PC.
 
+Now construct a data column with the PC, then do regression.
+```{r}
+
+compute_pcs <- function (coeffs, datacols) {
+  
+  compute_one <- function(coeffs, datavals) {
+    return (coeffs %*% datavals)
+  }
+  
+  return (apply(datacols, 1, compute_one, coeffs=coeffs))
+}
+
+pcs <- compute_pcs(PCs[[1]], abalone.t[,predictors])
+
+```
+
+now predict weights. first shucked.
+```{r}
+
+predict_slr <- function(x, y) {
+  
+  mean_x <- mean(x)
+  mean_y <- mean(y)
+  r <- cor(x, y)
+  sd_x <- sd(x)
+  sd_y <- sd(y)
+  
+  b <- r * sd_y/sd_x
+  a <- mean_y - b*mean_x
+  
+  return (list(predvals=a + b*x, rsq=r**2, a=a, b=b))
+}
+
+x <- pcs
+y <- abalone.t$Shucked.weight
+
+shucked.pred.slr <- predict_slr(x, y)
+plot(shucked.actual, shucked.pred.slr$predvals); abline(a=0,b=1)
+
+```
+
+now viscera wt.
+```{r}
+x <- pcs
+y <- abalone.t$Viscera.weight
+
+viscera.pred.slr <- predict_slr(x, y)
+plot(viscera.actual, viscera.pred.slr$predvals); abline(a=0,b=1)
+```
+
+RESULTS: MLR is slightly better, but not by much.
 
 
