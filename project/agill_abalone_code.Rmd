@@ -581,24 +581,62 @@ mlr <- function(S, mu) {
 
   coeffs <- t(sig0) %*% solve(C)
   
-  return(list(b, coeffs))
+  rsq <- t(sig0) %*% solve(C) %*% sig0 / S[1,1]
+    
+  return(list(b=b, coeffs=coeffs, rsq=rsq))
 }
 
 vars <- abalone.t %>% select(
   Shucked.weight, Viscera.weight, Length, Diameter, Height)
 
-S.shucked <- cov(vars %>% select(-Viscera.weight))
-mu.shucked <- colMeans(vars %>% select(-Viscera.weight))
-mlr(S.shucked, mu.shucked)
+S.sh <- cov(vars %>% select(-Viscera.weight))
+mu.sh <- colMeans(vars %>% select(-Viscera.weight))
+mlr.sh <- mlr(S.sh, mu.sh)
 
-S.viscera <- cov(vars %>% select(-Shucked.weight))
-mu.viscera <- colMeans(vars %>% select(-Shucked.weight))
-mlr(S.viscera, mu.viscera)
-
-
+S.vi <- cov(vars %>% select(-Shucked.weight))
+mu.vi <- colMeans(vars %>% select(-Shucked.weight))
+mlr.vi <- mlr(S.vi, mu.vi)
 ```
 
+check the model using coeffs of determination.
+```{r}
 
+rsq.sh <- mlr.sh$rsq
+rsq.vi <- mlr.vi$rsq
+```
+
+RESULT: both above 0.9. more than 90% of variation in shucked and viscera can be explained by the variation in length, diameter and height.
+
+now check by comparing actual to predicted. first shucked.
+```{r}
+
+predict_wts <- function (mlm, datacols) {
+  
+  predict_one <- function(b, coeffs, datavals) {
+    return (b + coeffs %*% datavals)
+  }
+  
+  return (apply(datacols, 1, predict_one, b=mlm$b, coeffs=mlm$coeffs))
+}
+
+shucked.pred <- predict_wts(mlr.sh, abalone.t[,predictors])
+shucked.actual <- abalone.t[,"Shucked.weight"]
+
+plot(shucked.actual, shucked.pred); abline(a=0,b=1)
+```
+now viscera.
+```{r}
+viscera.pred <- predict_wts(mlr.vi, abalone.t[,predictors])
+viscera.actual <- abalone.t[,"Viscera.weight"]
+
+plot(viscera.actual, viscera.pred); abline(a=0,b=1)
+```
+
+### 3.2 MLR with PCs
+
+```{r}
+
+```
 
 
 
