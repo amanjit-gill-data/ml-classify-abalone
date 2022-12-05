@@ -555,5 +555,51 @@ sex_boxplots(M.notM, c("Rings"), params, "2.7.pdf")
 
 RESULT: Considerable overlap, not much scope for improvement. Stick with SVM Radial.
 
+## 3. Profitability index
+
+proposed methods must all rely only on data summaries:
+- MLR
+- PCA as an input into MLR
+- CCA
+
+### 3.1 MLR using mu and Sigma
+
+Do each RV (shucked, viscera) separately
+```{r}
+
+mlr <- function(S, mu) {
+  
+  p <- length(mu)
+  
+  C <- S[2:p, 2:p]
+  sig0 <- S[2:p, 1]
+
+  mu.x <- mu[2:p]
+  mu.y <- mu[1]
+
+  b <- mu.y - t(sig0) %*% solve(C) %*% mu.x
+
+  coeffs <- t(sig0) %*% solve(C)
+  
+  return(list(b, coeffs))
+}
+
+vars <- abalone.t %>% select(
+  Shucked.weight, Viscera.weight, Length, Diameter, Height)
+
+S.shucked <- cov(vars %>% select(-Viscera.weight))
+mu.shucked <- colMeans(vars %>% select(-Viscera.weight))
+mlr(S.shucked, mu.shucked)
+
+S.viscera <- cov(vars %>% select(-Shucked.weight))
+mu.viscera <- colMeans(vars %>% select(-Shucked.weight))
+mlr(S.viscera, mu.viscera)
+
+
+```
+
+
+
+
 
 
