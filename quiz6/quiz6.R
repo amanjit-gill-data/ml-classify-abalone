@@ -43,8 +43,19 @@ ans_a_r <- -0.1965
 
 # QUESTION 7 - PART B
 
+normGNc <- mvdc(normalCopula(dim=2), margins=c("gamma","norm"),
+                paramMargins = list(list(shape=1, rate=1),
+                                    list(mean=0, sd=1)))
 
+gn_fit <- fitMvdc(as.matrix(X), normGNc, start = c(1,1, 0,1, 0))
 
+summary(gn_fit)
 
-
-
+ans_b_r <- -0.2033
+    
+ans_b_mean <- 0.6731
+ans_b_sd <- 2.4363
+    
+ans_b_shape <- 3.358
+ans_b_rate <- 2.914
+    
