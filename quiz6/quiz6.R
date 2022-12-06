@@ -11,21 +11,17 @@ library(copula)
 
 # QUESTION 6 - PART A
 
-X <- read.csv("Assignments/quiz6/X.csv")
+X <- read.csv("X.csv")
 
 ans_a_fit <- Mclust(X)
 
 ans_a_K <- 6
-
-plot(ans_a_fit, what=c("BIC", "classification"))
 
 # QUESTION 6 - PART B
 
 ans_b_fit <- Mclust(X, G=2)
 
 ans_b_o <- TRUE
-
-plot(ans_b_fit, what=c("BIC", "classification"))
 
 # QUESTION 7 - PART A
 
@@ -58,4 +54,4 @@ ans_b_sd <- 2.4363
     
 ans_b_shape <- 3.358
 ans_b_rate <- 2.914
-    
+

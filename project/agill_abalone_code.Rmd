@@ -397,7 +397,7 @@ compute accuracy of radial SVM for each class.
 acc.by.class(svm.rad$cm)
 ```
 
-Terrible accuracy for females - 7%. 
+Terrible accuracy for females - nearly zero.
 
 But better accuracy for infants and males (above 70%) than QDA.
 
@@ -713,6 +713,53 @@ viscera.pred.slr <- predict_slr(x, y)
 plot(viscera.actual, viscera.pred.slr$predvals); abline(a=0,b=1)
 ```
 
-RESULTS: MLR is slightly better, but not by much.
+RESULTS: MLR is slightly better, but not by much. Stick with MLR with observed variables.
+
+### 3.3 Prediction interval
+
+```{r}
+
+# for shucked wt; x0 = new observation
+x0 <- rbind(1,1,2,3)
+yhat <- t(x0) %*% cbind(c(mlr.sh$b, mlr.sh$coeffs))
+
+Z <- as.matrix(cbind(b0=1, abalone.t[,predictors]))
+sigii <- var(abalone.t$Shucked.weight)
+
+m <- 2
+n <- nrow(abalone.t)
+r <- length(predictors)
+
+alpha <- 0.05
+
+term1 <- m*(n-r-1)/(n-r-m) * qf(1-alpha, m, n-r-m)
+term2 <- 1 + t(x0) %*% solve(t(Z) %*% Z) %*% x0
+term3 <- n * sigii / (n-r-1)
+
+low <- yhat - sqrt(term1 * term2 * term3)
+high <- yhat + sqrt(term1 * term2 * term3) 
+
+est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.9) {
+  
+  predict shucked weight
+  predict viscera weight
+  
+  val <- shucked weight * v.sh + viscera weight * v.vi
+  
+  low.sh <- ETC
+  high.sh <- ETC
+  low.vi <- ETC
+  high.vi <- ETC
+  
+  low.val <- low.sh * v.sh + low.vi * v.vi
+  high.val <- high.sh * v.sh + high.sh * v.vi
+  
+  return (list(val, low.val, high.val))
+}
+
+
+```
+
+
 
 
