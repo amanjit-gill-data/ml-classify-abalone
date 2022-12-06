@@ -610,12 +610,11 @@ RESULT: both above 0.9. more than 90% of variation in shucked and viscera can be
 now check by comparing actual to predicted. first shucked.
 ```{r}
 
+predict_one <- function(b, coeffs, datavals) {
+  return (b + coeffs %*% datavals)
+}
+
 predict_wts <- function (mlm, datacols) {
-  
-  predict_one <- function(b, coeffs, datavals) {
-    return (b + coeffs %*% datavals)
-  }
-  
   return (apply(datacols, 1, predict_one, b=mlm$b, coeffs=mlm$coeffs))
 }
 
@@ -720,43 +719,49 @@ RESULTS: MLR is slightly better, but not by much. Stick with MLR with observed v
 ```{r}
 
 # for shucked wt; x0 = new observation
-x0 <- rbind(1,1,2,3)
-yhat <- t(x0) %*% cbind(c(mlr.sh$b, mlr.sh$coeffs))
 
-Z <- as.matrix(cbind(b0=1, abalone.t[,predictors]))
-sigii <- var(abalone.t$Shucked.weight)
-
-m <- 2
-n <- nrow(abalone.t)
-r <- length(predictors)
-
-alpha <- 0.05
-
-term1 <- m*(n-r-1)/(n-r-m) * qf(1-alpha, m, n-r-m)
-term2 <- 1 + t(x0) %*% solve(t(Z) %*% Z) %*% x0
-term3 <- n * sigii / (n-r-1)
-
-low <- yhat - sqrt(term1 * term2 * term3)
-high <- yhat + sqrt(term1 * term2 * term3) 
-
-est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.9) {
+PI <- function(x0, col_to_predict, mlr, alpha) {
   
-  predict shucked weight
-  predict viscera weight
+  x0 <- c(1, x0)
+  Z <- as.matrix(cbind(b0=1, abalone.t[,predictors]))
+  sigii <- var(col_to_predict)
   
-  val <- shucked weight * v.sh + viscera weight * v.vi
+  m <- 2
+  n <- nrow(abalone.t)
+  r <- length(predictors)
   
-  low.sh <- ETC
-  high.sh <- ETC
-  low.vi <- ETC
-  high.vi <- ETC
+  term1 <- m*(n-r-1)/(n-r-m) * qf(1-alpha, m, n-r-m)
+  term2 <- 1 + t(x0) %*% solve(t(Z) %*% Z) %*% x0
+  term3 <- n * sigii / (n-r-1)
   
-  low.val <- low.sh * v.sh + low.vi * v.vi
-  high.val <- high.sh * v.sh + high.sh * v.vi
+  yhat <- t(x0) %*% cbind(c(mlr$b, mlr$coeffs))
+  low <- yhat - sqrt(term1 * term2 * term3)
+  high <- yhat + sqrt(term1 * term2 * term3) 
+  
+  return (list(yhat=yhat, low=low, high=high))
+}
+
+calc_price <- function(sh.pred, vi.pred, v.sh, v.vi) {
+  sh.pred * v.sh + vi.pred * v.vi
+}
+
+est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.05) {
+  
+  len.t <- sqrt(reflect(len))
+  diam.t <- sqrt(reflect(diam))
+  height.t <- log(height)
+  
+  x0 <- c(len.t, diam.t, height.t)
+  
+  sh.pred <- PI(x0, abalone.t$Shucked.weight, mlr.sh, alpha)**2
+  vi.pred <- PI(x0, abalone.t$Viscera.weight, mlr.vi, alpha)**2
+  
+  val <- calc_price(sh.pred$yhat, vi.pred$yhat, v.sh, v.vi)
+  low.val <- calc_price(sh.pred$low, vi.pred$low, v.sh, v.vi)
+  high.val <- calc_price(sh.pred$high, vi.pred$high, v.sh, v.vi)
   
   return (list(val, low.val, high.val))
 }
-
 
 ```
 
