@@ -30,8 +30,7 @@ h3 {
 
 ## 1. Exploratory Analysis
 
-```{r setup, message=FALSE}
-
+```{r, message=FALSE}
 library(here)
 library(MVN)
 library(heplots)
@@ -41,10 +40,9 @@ library(dplyr)
 
 select <- dplyr::select
 
-
 par(
     family = "serif",
-    ps = 11,
+    ps = 11.5,
     mar = c(4.5, 1, 2, 1)
 )
 
@@ -59,46 +57,41 @@ cols <- colnames(abalone)[-1]
 ### 1.1 Summary statistics
 
 Statistical summary for each numerical variable.
-```{r summary}
-
-summary(abalone[cols])
-
-```
-
-RESULTS:
-
-none of the maximum values appear to be out of range, according to sources. however:
-
-min height = 0 (impossible).
-
-find out how many there are, compared to how many cases there are in total.
 ```{r}
-abalone %>% filter(Height == 0) %>% nrow()
-nrow(abalone)
+summary(abalone[cols])
 ```
 
-only 2 out of 4177. not a serious problem with the data. remove.
+Min height = 0 (impossible).
+
+Count how many times this occurs in the data.
+```{r}
+n.zeros <- abalone %>% filter(Height == 0) %>% nrow()
+n <- nrow(abalone)
+
+cat(n.zeros,"out of",n)
+```
+
+Only a few occurrences. Remove from data.
 ```{r}
 abalone <- abalone %>% filter(Height > 0)
 ```
 
-
-all the minimum weights are between 0.1 and 0.4 grams. not sure how realistic it is to catch and measure an abalone that tiny. may be outlier errors, or may be real.
-
 Check for missing values.
-```{r missing values}
+```{r}
 
-nrow(abalone)
-sum(complete.cases(abalone))
+n.complete <- sum(complete.cases(abalone))
+n <- nrow(abalone)
+
+cat(n.complete,"out of",n)
 ```
 
-RESULT: No missing values; all rows are complete.
+No missing values; all rows are complete.
 
 ### 1.2 Univariate outliers
 
-```{r outliers}
-
+```{r}
 boxplots <- function(data, colnames, pars, outfile) {
+
     pdf(outfile)
     par(pars)
     gridrows <- ceiling(length(colnames)/2)
@@ -113,42 +106,40 @@ boxplots <- function(data, colnames, pars, outfile) {
     
     return(data.frame(outliers, row.names = colnames))
 }
-
-outliers <- boxplots(abalone, cols, params, "1.2.pdf")
-
 ```
 
-RESULTS: 
+```{r}
+(outliers <- boxplots(abalone, cols, params, "1.2.pdf"))
+```
 
-every numerical variable has some outliers.
-however, for 7 of them, the number of outliers is between 0.5 and 1.5% of the sample size, so it's not clear that they will affect the analysis.
-for the 8th, Rings, there are 278 outliers, 6.7% of the sample size. This may be impactful, and should be confirmed as being so.
+![](1.2.pdf){width=100% height=500}
 
-we will not remedy the outliers here. we will try transformations first, to see if some of outliers have been pulled in.
+Every numerical variable has some outliers. However, for most of them, the number of outliers is between 0.5% and 1.5% of the sample size, so it's not clear that they will affect the analysis.
+
+For Rings, 6.7% of the sample are outliers. This may be impactful for future analyses.
+
+We will not remedy the outliers here. We will try transformations first, to see if these "pull in" some of the outliers.
 
 ### 1.3 Linearity and homoscedasticity
 
-```{r linearity}
-pdf("1.3.pdf")
+```{r}
+png("1.3.png", width=1000, height=1000)
 par(params)
-
 pairs(abalone[cols])
 ```
 
-RESULTS:
+<img src="1.3.png">
 
-non-linear between all the weights and the length and diameter
+Non-linear relationships between all the weight variables and the length and diameter.
 
-heteroscedasticity between rings and everything except for height
+Heteroscedasticity between rings and all variables except height.
 
-oval shape implies univariate normality of whole, shucked and viscera weights
-others are too hard to tell
-
+Oval shape implies univariate normality of whole, shucked and viscera weights.
 
 ### 1.4 Normality
 
-```{r normality}
-
+Plot univariate densities to confirm normality.
+```{r}
 density_charts <- function(data, colnames, pars, outfile) {
     pdf(outfile)
     par(pars)
@@ -159,48 +150,37 @@ density_charts <- function(data, colnames, pars, outfile) {
         plot(density(data[,c]), xlab=c)
     }
 }
+```
 
+```{r}
 density_charts(abalone, cols, params, "1.4.pdf")
-
 ```
 
-Mardia's skewness and kurtosis test
-```{r mardia}
+![](1.4.pdf){width=100% height=500}
 
+Conduct Mardia's skewness and kurtosis test.
+```{r}
 mvn_test <- mvn(abalone[cols], mvnTest = "mardia", univariateTest = "SW")
-
+mvn_test$multivariateNormality %>% select(-Statistic)
+mvn_test$univariateNormality %>% select(Variable, "p value", Normality)
 ```
+
+All variables exhibit departures from normality. This should be addressed because the techniques chosen for the upcoming classification and regression tasks assume normality.
 
 ### 1.5 Transformations
 
-moderately different from normal: square root
+The following guidance will be applied:
 
-substantially different from normal: logarithm
-
-extremely different from normal: inverse
-
-
-apply following transformations:
-
-|Variable|Transformation|
-|:--------|:--------------|
-|Length|Reflect and square root|
-|Diameter|Reflect and square root|
-|Height|Logarithm|
-|Whole weight|Square root|
-|Shucked weight|Square root|
-|Viscera weight|Square root|
-|Shell weight|Square root|
-|Rings|Square root|
-
+- If negatively skewed, reflect before transformation
+- If moderately different from normal: square root
+- If substantially different from normal: logarithm
+- If extremely different from normal: inverse
 
 ```{r}
-
 reflect <- function(vals) {
     maxval <- max(vals)
     maxval+1 - vals
 }
-
 
 abalone.t <- abalone %>% mutate(
     Length = sqrt(reflect(Length)),
@@ -213,23 +193,37 @@ abalone.t <- abalone %>% mutate(
     Rings = sqrt(Rings),
     .keep = "unused"
 )
-
 ```
 
-recheck normality
+Re-examine density plots to confirm improvement.
 ```{r}
-
 density_charts(abalone.t, cols, params, "1.5.pdf")
-mvn_test.t <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")
 ```
 
-still fails all tests, but this is because the tests are more likely to fail at larger N for small deviations. visually, they look mostly normal, which matters more than the hyp test.
+![Density charts](1.5.pdf){width=100% height=500}
 
-much improved skewness - very small compared to original data
+Marked improvement for all variables.
 
-for kurtosis, most variables have gone from slightly positive (too peaked) to slightly negative (too flat), but the magnitudes are 1 or below, with the exception of Height, which has experienced a marked improvement (from 76.62 to 4.57).
+Now redo normality tests.
+```{r}
+mvn_test.t <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")
 
-kurtosis generally does not affect estimates of variance for large sample sizes, so these transformations are considered acceptable.
+"YES" %in% mvn_test.t$multivariateNormality$Result
+"YES" %in% trimws(mvn_test.t$univariateNormality$Normality)
+```
+
+Still fails all tests, but this may be because the tests are more likely to fail at larger N for small deviations from normality. Let us examine and remove outliers and see if this delivers further improvements.
+
+### 1.6 Removal of outliers
+
+First check how many outliers remain after transformations.
+
+```{r}
+outliers.t <- boxplots(abalone.t, cols, params, "1.6.pdf")
+data.frame(outliers, outliers.t)
+```
+
+![Boxplots](1.6.pdf){width=100% height=500}
 
 table comparing original skewness and new skewness
 ```{r}
@@ -246,14 +240,6 @@ kurt
 ```
 
 
-### 1.6 Removal of outliers
-
-first recheck how many outliers remain after transformation.
-
-```{r}
-outliers.t <- boxplots(abalone.t, cols, params, "1.6.pdf")
-data.frame(outliers, outliers.t)
-```
 
 RESULTS:
 
@@ -278,6 +264,8 @@ sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Desc
 sk.final
 ```
 
+![Density charts](1.7.pdf){width=100% height=500}
+
 RESULT: skewness and kurtosis are now all now below a magnitude of 1.
 
 despite failure of SW test, can now be confident of univariate normality.
@@ -293,10 +281,8 @@ abalone.t <- abalone.t %>% mutate(Sex=factor(Sex, levels=c("I", "F", "M")))
 ### 2.1. Check equal covariances assumption.
 
 ```{r}
-
 predictors = c("Length", "Diameter", "Height")
 boxM(abalone.t[,predictors], abalone.t[,"Sex"])
-
 ```
 RESULT: Highly significant. Covariances are NOT equal. Therefore, start with QDA, not LDA.
 
@@ -305,7 +291,6 @@ RESULT: Highly significant. Covariances are NOT equal. Therefore, start with QDA
 first try qda due to unequal variances.
 
 ```{r}
-
 cm.da <- function(func, truevals, formula, data) {
     
     cm <- table(truth=truevals, 
@@ -318,7 +303,6 @@ cm.da <- function(func, truevals, formula, data) {
 }
 
 cm.da(qda, abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t)
-
 ```
 RESULT: Only half of the cases were predicted correctly.
 
@@ -344,7 +328,6 @@ acc.by.class <- function(cm) {
 }
 
 acc.by.class(cm.lda$cm)
-
 ```
 
 RESULT: Very poor performance for predicting females. Four-fifths of females will be classified incorrectly. 
@@ -374,26 +357,22 @@ svm.lin <- svm.and.cm(abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t,
                       kernel="linear", cost=c(0.1, 1, 10))
 
 svm.lin$acc
-
 ```
 
 RESULT: Not better than LDA.
 
 now try radial kernel
 ```{r}
-
 svm.rad <- svm.and.cm(abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t,
                       kernel="radial", cost=c(0.1, 1, 10), gamma=c(0.1, 1, 10))
 
 svm.rad$acc
-
 ```
 
 RESULT: About the same as LDA, but slightly higher.
 
 compute accuracy of radial SVM for each class.
 ```{r}
-
 acc.by.class(svm.rad$cm)
 ```
 
@@ -412,20 +391,15 @@ sex_boxplots <- function(data, colnames, pars, outfile) {
         boxplot(data[,c] ~ data[,"Sex"], xlab=c)
     }
 }
+```
 
+```{r}
 sex_boxplots(abalone.t, predictors, params, "2.4.pdf")
 ```
 
+![Boxplots](2.4.pdf){width=100% height=500}
+
 RESULTS: Overlap between F and M for all three predictors. This may explain poor performancce of F predictions. Classifiers all seem to favour M over F. Infant data are largely separated from M and F, explaining why performance for I is consistently better for all classifiers.
-
-So how do we separate M cases from F cases?
-
-How about age (Rings)?
-```{r}
-sex_boxplots(abalone.t, c("Rings"), params, "2.4a.pdf")
-```
-
-RESULT: Good separation of I from F and M, but still considerable overlap of F and M. F is completely subsumed by M, and even has nearly the same median.
 
 ### 2.5 I vs Not I
 
@@ -446,7 +420,6 @@ cm.lda.I$acc
 
 SVM linear kernel
 ```{r}
-
 svm.lin.I <- svm.and.cm(I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI,
                       kernel="linear", cost=c(0.1, 1, 10))
 
@@ -461,41 +434,8 @@ svm.rad.I <- svm.and.cm(I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI,
 svm.rad.I$acc
 ```
 
-RESULTS: Best performance is SVM Radial.
+RESULTS: Best performance is SVM Radial, approaching 80% accuracy.
 
-But infants should theoretically have fewer rings than adult f/m. So can Rings help us separate I from notI?
-```{r}
-sex_boxplots(I.notI, c("Rings"), params, "2.5.pdf")
-
-```
-
-RESULT: Can see that IQR for infants ends where IQR for adults starts.
-
-This can be used as a threshold between I and notI.
-```{r}
-justI <- I.notI %>% filter(Sex == "I")
-threshold <- quantile(justI$Rings)["75%"]
-
-lowR <- I.notI %>% filter(Rings <= threshold)
-highR <- I.notI %>% filter(Rings > threshold)
-
-low.high <- rbind(table(lowR$Sex), table(highR$Sex))
-row.names(low.high) <- c("Rings<=threshold", "Rings>threshold")
-
-low.high <- cbind(low.high, proportionI=low.high[,1]/rowSums(low.high))
-low.high
-```
-
-RESULT:
-
-For high Rings, nearly 88% of cases are not I. This is a remarkable result because it means that for high Rings, simply allocating it to NotI works better than the classifiers.
-
-By contrast, for low Rings, approx half of cases are I, and half are not I, meaning that for low Rings, the physical dimensions (length, etc) perform better.
-
-This leaves us with the following algorithm:
-
-if high Rings, class = NotI
-if low Rings, class = use classifier (SVM Radial)
 
 ### 2.6 F vs Not F
 
@@ -515,17 +455,9 @@ svm.rad.F <- svm.and.cm(F.notF$Sex, Sex ~ Length+Diameter+Height, F.notF,
 
 rbind(qda=cm.qda.F$acc, lda=cm.lda.F$acc, svm.lin=svm.lin.F$acc,
       svm.rad=svm.rad.F$acc)
-
 ```
 
 RESULT: SVM Radial is best model. Reasonable performance at nearly 70%. 
-
-See if Rings can help like with infants. Not likely, but worth a try.
-```{r}
-sex_boxplots(F.notF, c("Rings"), params, "2.6.pdf")
-```
-
-RESULT: Too much overlap, not much scope for improvement. Stick with SVM Radial.
 
 ### 2.7 M vs Not M
 
@@ -548,12 +480,6 @@ rbind(qda=cm.qda.M$acc, lda=cm.lda.M$acc, svm.lin=svm.lin.M$acc,
 ```
 RESULT: SVM Radial gives best performance. But poorer than for F vs not F.
 
-See if Rings can help like with infants. Not likely, but worth a try.
-```{r}
-sex_boxplots(M.notM, c("Rings"), params, "2.7.pdf")
-```
-
-RESULT: Considerable overlap, not much scope for improvement. Stick with SVM Radial.
 
 ## 3. Profitability index
 
@@ -566,7 +492,6 @@ proposed methods must all rely only on data summaries:
 
 Do each RV (shucked, viscera) separately
 ```{r}
-
 mlr <- function(S, mu) {
   
   p <- length(mu)
@@ -600,7 +525,6 @@ mlr.vi <- mlr(S.vi, mu.vi)
 
 check the model using coeffs of determination.
 ```{r}
-
 rsq.sh <- mlr.sh$rsq
 rsq.vi <- mlr.vi$rsq
 ```
@@ -609,7 +533,6 @@ RESULT: both above 0.9. more than 90% of variation in shucked and viscera can be
 
 now check by comparing actual to predicted. first shucked.
 ```{r}
-
 predict_one <- function(b, coeffs, datavals) {
   return (b + coeffs %*% datavals)
 }
@@ -635,7 +558,6 @@ plot(viscera.actual, viscera.pred.mlr); abline(a=0,b=1)
 
 First do PCA on IVs
 ```{r}
-
 S <- cov(abalone.t %>% select(Length, Diameter, Height))
 
 eig <- eigen(S)
@@ -657,14 +579,12 @@ for (i in 1:p) {
 
 var_conts.c <- cumsum(var_conts)
 (min(which(var_conts.c >= 90)))
-
 ```
 
 RESULT: Choose just the first PC.
 
 Now construct a data column with the PC, then do regression.
 ```{r}
-
 compute_pcs <- function (coeffs, datacols) {
   
   compute_one <- function(coeffs, datavals) {
@@ -675,12 +595,10 @@ compute_pcs <- function (coeffs, datacols) {
 }
 
 pcs <- compute_pcs(PCs[[1]], abalone.t[,predictors])
-
 ```
 
 now predict weights. first shucked.
 ```{r}
-
 predict_slr <- function(x, y) {
   
   mean_x <- mean(x)
@@ -700,7 +618,6 @@ y <- abalone.t$Shucked.weight
 
 shucked.pred.slr <- predict_slr(x, y)
 plot(shucked.actual, shucked.pred.slr$predvals); abline(a=0,b=1)
-
 ```
 
 now viscera wt.
@@ -717,9 +634,6 @@ RESULTS: MLR is slightly better, but not by much. Stick with MLR with observed v
 ### 3.3 Prediction interval
 
 ```{r}
-
-# for shucked wt; x0 = new observation
-
 PI <- function(x0, col_to_predict, mlr, alpha) {
   
   x0 <- c(1, x0)
@@ -753,16 +667,15 @@ est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.05) {
   
   x0 <- c(len.t, diam.t, height.t)
   
-  sh.pred <- PI(x0, abalone.t$Shucked.weight, mlr.sh, alpha)**2
-  vi.pred <- PI(x0, abalone.t$Viscera.weight, mlr.vi, alpha)**2
+  sh.pred <- PI(x0, abalone.t$Shucked.weight, mlr.sh, alpha)
+  vi.pred <- PI(x0, abalone.t$Viscera.weight, mlr.vi, alpha)
   
-  val <- calc_price(sh.pred$yhat, vi.pred$yhat, v.sh, v.vi)
-  low.val <- calc_price(sh.pred$low, vi.pred$low, v.sh, v.vi)
-  high.val <- calc_price(sh.pred$high, vi.pred$high, v.sh, v.vi)
+  val <- calc_price(sh.pred$yhat**2, vi.pred$yhat**2, v.sh, v.vi)
+  low.val <- calc_price(sh.pred$low**2, vi.pred$low**2, v.sh, v.vi)
+  high.val <- calc_price(sh.pred$high**2, vi.pred$high**2, v.sh, v.vi)
   
-  return (list(val, low.val, high.val))
+  return (list(round(val,2), round(low.val,2), round(high.val,2)))
 }
-
 ```
 
 
