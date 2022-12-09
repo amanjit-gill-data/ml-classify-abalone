@@ -1,7 +1,7 @@
 ---
 title: "Classification and Pricing of Farmed Abalone"
 author: "Amanjit Gill"
-date: "2022-12-05"
+date: "2022-12-12"
 output: 
     html_notebook:
         theme: flatly
@@ -733,6 +733,9 @@ Visually similar to MLR. Very good agreement between predicted and actual values
 
 ### 3.4 Prediction interval
 
+Develop function that predicts value of an abalone with a prediction interval.
+
+First define auxilliary functions.
 ```{r}
 
 # compute prediction interval for response variable (transformed), given:
@@ -740,12 +743,11 @@ Visually similar to MLR. Very good agreement between predicted and actual values
 # - variance of response variable (transformed)
 # - MLR model for response variable (transformed)
 # - alpha i.e. for a 90% PI, alpha = 0.1
-PI <- function(x0, col_to_predict, mlr, alpha) {
+PI <- function(x, sigii, mlr, alpha) {
   
-  x0 <- c(1, x0)
-  Z <- as.matrix(cbind(b0=1, abalone.t[,predictors]))
-  sigii <- var(col_to_predict)
-  
+  x0 <- c(1, x)
+  Z <- as.matrix(cbind(const=1, abalone.t[,predictors]))
+
   m <- 2
   n <- nrow(abalone.t)
   r <- length(predictors)
@@ -754,7 +756,7 @@ PI <- function(x0, col_to_predict, mlr, alpha) {
   term2 <- 1 + t(x0) %*% solve(t(Z) %*% Z) %*% x0
   term3 <- n * sigii / (n-r-1)
   
-  yhat <- t(x0) %*% cbind(c(mlr$b, mlr$coeffs))
+  yhat <- predict_one(mlr$b, mlr$coeffs, x)
   low <- yhat - sqrt(term1 * term2 * term3)
   high <- yhat + sqrt(term1 * term2 * term3) 
   
@@ -768,22 +770,31 @@ calc_price <- function(sh.pred, vi.pred, v.sh, v.vi) {
   sh.pred * v.sh + vi.pred * v.vi
 }
 
-# predict price, with price range, of an abalone, given:
+# to assist in transforming predictor variables
+reflect_one <- function(val, maxval) {
+  maxval + 1 - val
+}
+```
+
+
+Price prediction function; also returns prediction interval.
+```{r}
+# predict price, with interval, of an abalone, given:
 # - dimensions
 # - price per gram, for shucked and viscera
 # - alpha (default 0.05)
 est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.05) {
   
   # transform dimensions
-  len.t <- sqrt(reflect(len))
-  diam.t <- sqrt(reflect(diam))
+  len.t <- sqrt(reflect_one(len, max(abalone$Length)))
+  diam.t <- sqrt(reflect_one(diam, max(abalone$Diameter)))
   height.t <- log(height)
   
-  x0 <- c(len.t, diam.t, height.t)
+  x <- c(len.t, diam.t, height.t)
   
   # compute prediction interval (transformed) for shucked and viscera
-  sh.pred <- PI(x0, abalone.t$Shucked.weight, mlr.sh, alpha)
-  vi.pred <- PI(x0, abalone.t$Viscera.weight, mlr.vi, alpha)
+  sh.pred <- PI(x, var(abalone.t$Shucked.weight), mlr.sh, alpha)
+  vi.pred <- PI(x, var(abalone.t$Viscera.weight), mlr.vi, alpha)
   
   # compute predicted price, plus floor and ceiling (UNtransformed)
   val <- calc_price(sh.pred$yhat**2, vi.pred$yhat**2, v.sh, v.vi)
@@ -793,3 +804,5 @@ est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.05) {
   return (list(round(val,2), round(low.val,2), round(high.val,2)))
 }
 ```
+
+
