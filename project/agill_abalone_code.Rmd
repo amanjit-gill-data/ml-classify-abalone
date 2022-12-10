@@ -36,13 +36,18 @@ library(heplots)
 library(e1071)
 library(MASS)
 library(dplyr)
+library(knitr)
+library(kableExtra)
 
 select <- dplyr::select
 
 par(
     family = "serif",
-    ps = 11.5,
-    mar = c(4.5, 1, 2, 1)
+    ps = 12,
+    mar = c(1, 1, 4, 1),
+    xaxt = "n",
+    yaxt = "n",
+    font.main = 1
 )
 
 params <- par(no.readonly = TRUE)
@@ -58,22 +63,19 @@ cols <- colnames(abalone)[-1]
 Statistical summary for each numerical variable.
 
 ```{r}
-summary(abalone[cols])
+kable(summary(abalone[cols])) %>% kable_styling(full_width=TRUE, font_size = 11)
 ```
 
-Min height = 0 (impossible).
-
-Count how many times this occurs in the data.
+Minimum height is 0. This is impossible. Count how many times this occurs in the data.
 
 ```{r}
 n.zeros <- abalone %>% filter(Height == 0) %>% nrow()
 n <- nrow(abalone)
 
-cat(n.zeros,"out of",n)
+cat(n.zeros,"zeros out of",n)
 ```
 
-Only a few occurrences.
-Remove from data.
+Only a few occurrences. Remove from data.
 
 ```{r}
 abalone <- abalone %>% filter(Height > 0)
@@ -86,7 +88,7 @@ Check for missing values.
 n.complete <- sum(complete.cases(abalone))
 n <- nrow(abalone)
 
-cat(n.complete,"out of",n)
+cat(n.complete,"complete cases out of",n)
 ```
 
 No missing values; all rows are complete.
@@ -104,7 +106,7 @@ boxplots <- function(data, colnames, pars, outfile) {
     outliers <- c()
     
     for (c in colnames) {
-        b <- boxplot(data[,c], horizontal = TRUE, xlab = c)
+        b <- boxplot(data[,c], horizontal = TRUE, main=c, boxwex=.6,              col="lightblue")
         outliers <- c(outliers, length(b$out))
     }
     
@@ -113,19 +115,14 @@ boxplots <- function(data, colnames, pars, outfile) {
 ```
 
 ```{r}
-(outliers <- boxplots(abalone, cols, params, "1.2.pdf"))
+outliers <- boxplots(abalone, cols, params, "1.2.pdf")
+kable(outliers) %>% kable_styling(position="center", full_width=FALSE)
 ```
-
 ![](1.2.pdf){width="100%" height="500"}
 
-Every numerical variable has some outliers.
-However, for most of them, the number of outliers is between 0.5% and 1.5% of the sample size, so it's not clear that they will affect the analysis.
+Every numerical variable has some outliers. For most of them, the number of outliers is between 0.5% and 1.5% of the sample size. For Rings, 6.7% of the sample are outliers. This may be impactful for future analyses.
 
-For Rings, 6.7% of the sample are outliers.
-This may be impactful for future analyses.
-
-We will not remedy the outliers here.
-We will try transformations first, to see if these "pull in" some of the outliers.
+We will not remedy the outliers here. Try transformations first, to see if these "pull in" some of the outliers.
 
 ### 1.3 Linearity and homoscedasticity
 
@@ -135,17 +132,17 @@ par(params)
 pairs(abalone[cols])
 ```
 
-<img src="1.3.png"/>
+![](1.3.png){width="100%" height="900"}
 
-Non-linear relationships between all the weight variables and the length and diameter.
+Non-linear relationships exist between all the **weight** variables and the length and diameter.
 
-Heteroscedasticity between rings and all variables except height.
+Heteroscedasticity appears to exist between **rings** and all variables except height.
 
 Oval shape implies univariate normality of whole, shucked and viscera weights.
 
 ### 1.4 Normality
 
-Plot univariate densities to confirm normality.
+Plot univariate densities to confirm normality. Also conduct skewness and kurtosis tests.
 
 ```{r}
 density_charts <- function(data, colnames, pars, outfile) {
@@ -155,7 +152,7 @@ density_charts <- function(data, colnames, pars, outfile) {
     par("mfrow"=c(gridrows, 2))
 
     for (c in colnames) {
-        plot(density(data[,c]), xlab=c)
+        plot(density(data[,c]), main=c)
     }
 }
 ```
@@ -166,16 +163,18 @@ density_charts(abalone, cols, params, "1.4.pdf")
 
 ![](1.4.pdf){width="100%" height="500"}
 
-Conduct Mardia's skewness and kurtosis test.
-
 ```{r}
 mvn_test <- mvn(abalone[cols], mvnTest = "mardia", univariateTest = "SW")
-mvn_test$multivariateNormality %>% select(-Statistic)
-mvn_test$univariateNormality %>% select(Variable, "p value", Normality)
 ```
 
-All variables exhibit departures from normality.
-This should be addressed because the techniques chosen for the upcoming classification and regression tasks assume normality.
+```{r echo=FALSE}
+kable(mvn_test$multivariateNormality %>% select(-Statistic)) %>% kable_styling(full_width = FALSE, position = "float_left")
+
+kable(mvn_test$univariateNormality %>% select(Variable, "p value", Normality)) %>% kable_styling(full_width = FALSE, position="right")
+
+```
+
+All variables exhibit departures from normality. This should be addressed because the techniques chosen for the upcoming classification and regression tasks assume normality.
 
 ### 1.5 Transformations
 
@@ -205,7 +204,7 @@ abalone.t <- abalone %>% mutate(
 )
 ```
 
-Re-examine density plots to confirm improvement.
+Re-examine density plots and skewness and kurtosis tests to confirm improvement.
 
 ```{r}
 density_charts(abalone.t, cols, params, "1.5.pdf")
@@ -213,19 +212,19 @@ density_charts(abalone.t, cols, params, "1.5.pdf")
 
 ![](1.5.pdf){width="100%" height="500"}
 
-Marked improvement for all variables.
-
-Now redo normality tests.
-
 ```{r}
 mvn_test.t <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")
-
-"YES" %in% mvn_test.t$multivariateNormality$Result
-"YES" %in% trimws(mvn_test.t$univariateNormality$Normality)
 ```
 
-Still fails all tests, but this may be because the tests are more likely to fail at larger N for small deviations from normality.
-Let us examine and remove outliers and see if this delivers further improvements.
+```{r echo=FALSE}
+cat("Any Mardia test passes:", "YES" %in%
+      mvn_test.t$multivariateNormality$Result, "\n")
+    
+cat("Any Shapiro-Wilks test passes:", "YES" %in%
+      trimws(mvn_test.t$univariateNormality$Normality))
+```
+
+Still fails all tests, but this may be because the tests are more likely to fail at larger N for small deviations from normality. Remove outliers and see if this delivers further improvements.
 
 ### 1.6 Removal of outliers
 
@@ -233,38 +232,37 @@ First check how many outliers remain after transformations.
 
 ```{r}
 outliers.t <- boxplots(abalone.t, cols, params, "1.6.pdf")
-data.frame(outliers, outliers.t)
+
+out_compare <- cbind(a=outliers, b=outliers.t)
+colnames(out_compare) <- c("initial", "remaining")
+kable(out_compare) %>% kable_styling(full_width=FALSE)
 ```
 
 ![](1.6.pdf){width="100%" height="500"}
 
-New boxplots show far less congestion of outliers at the extremities, except for Height. This is confirmed by the comparison table, which shows a remarkable reduction in the number of outliers for every transformed variable, except, as expected, for Height.
+New boxplots show far less congestion of outliers at the extremities, except for Height. This is confirmed by the comparison table, which shows a remarkable reduction in the number of outliers for every transformed variable, except, as expected, for **height**.
 
 Now assess improvement in skewness and kurtosis.
 
 ```{r}
-skew <- data.frame(
-  rownames(mvn_test$Descriptives),
-  mvn_test$Descriptives$Skew, 
-  mvn_test.t$Descriptives$Skew)
-skew[,"Ratio"] <- abs(skew[,3]/skew[,2])
-skew
-```
-Skewness is now a fraction of its original magnitude for all variables. It is also less than 1 for all variables bar Height.
+sk <- data.frame(
+  "variable"=rownames(mvn_test$Descriptives),
+  "initial skew"=round(mvn_test$Descriptives$Skew,4), 
+  "current skew"=round(mvn_test.t$Descriptives$Skew,4),
+  "initial kurt"=round(mvn_test$Descriptives$Kurtosis,4), 
+  "current kurt"=round(mvn_test.t$Descriptives$Kurtosis,4)
+  )
 
+sk[,"skew ratio"] <- round(abs(sk[,3]/sk[,2]),4)
+sk[,"kurt ratio"] <- round(abs(sk[,5]/sk[,4]),4)
 
-```{r}
-kurt <- data.frame(
-  rownames(mvn_test$Descriptives),
-  mvn_test$Descriptives$Kurtosis, 
-  mvn_test.t$Descriptives$Kurtosis)
-kurt[,"Ratio"] <- abs(kurt[,3]/kurt[,2])
-kurt
+kable(sk) %>% kable_styling()
 ```
-For half of the variables, the transformations have centralised the values to the extent that an increase in kurtosis is observed. For large N, this is an acceptable result as it won't lead to underestimation of variance as would happen with small N.
+Skewness is now a fraction of its original magnitude for all variables. It is also less than 1 for all variables bar **height**.
+
+For half of the variables, the transformations have centralised the values to the extent that an increase in kurtosis is observed. For large N, this is an acceptable result as it will not lead to underestimation of variance as would happen with small N.
 
 Now let us remove outliers.
-
 ```{r}
 for (c in cols) {
     outs <- boxplot.stats(abalone.t[,c])$out
@@ -272,42 +270,40 @@ for (c in cols) {
 }
 ```
 
-### 1.7 Check
+### 1.7 Final check
 
 Final assessment of normality to confirm improvement after removal of outliers.
 
 ```{r}
 density_charts(abalone.t, cols, params, "1.7.pdf")
 
-sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(Skew, Kurtosis)
+sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(Skew, Kurtosis) %>% round(4)
 
-sk.final
+kable(sk.final) %>% kable_styling(full_width=FALSE)
 ```
 
 ![](1.7.pdf){width="100%" height="500"}
 
-Skewness and kurtosis are now all below a magnitude of 1.
-
-Can now be confident that data are sufficiently normal that modelling can proceed.
+Skewness and kurtosis are now all smaller than magnitude 1. Visually, all variables exhibit sufficient normality for modelling to proceed.
 
 ## 2. Predicting Abalone Sex
 
-First convert response variable to factor as required by some models.
+Discriminant analysis and support vector machines will be attempted.
 
+First convert response variable to factor as required by models.
 ```{r}
 abalone.t <- abalone.t %>% mutate(Sex=factor(Sex, levels=c("I", "F", "M")))
 ```
 
 ### 2.1 Test equality of variances
 
-Linear Discriminant Analysis assumes equal variances. Use Box's M Test to see if this condition is met.
+LDA (Linear Discriminant Analysis) assumes equal variances. Use Box's M-Test to see if this condition is met.
 
 ```{r}
 predictors = c("Length", "Diameter", "Height")
 boxM(abalone.t[,predictors], abalone.t[,"Sex"])
 ```
-
-Highly significant, meaning the covariances are *not* equal. LDA can still be used, but we'll start with QDA (Quadratic Discriminant Analysis) anyway, which does not depend on equal variances.
+Highly significant, meaning the covariances are *not* equal. LDA can still be used, but we will start with QDA (Quadratic Discriminant Analysis), which does not depend on equal variances.
 
 ### 2.2 Discriminant analysis
 
