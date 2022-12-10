@@ -5,6 +5,7 @@ date: "2022-12-12"
 output: 
     html_notebook:
         theme: flatly
+        toc: true
 ---
 
 ```{css echo=FALSE}
@@ -30,7 +31,6 @@ h3 {
 ## 1. Exploratory Analysis
 
 ```{r, message=FALSE}
-library(here)
 library(MVN)
 library(heplots)
 library(e1071)
@@ -41,6 +41,7 @@ library(kableExtra)
 
 select <- dplyr::select
 
+# plot styling
 par(
     family = "serif",
     ps = 12,
@@ -52,6 +53,13 @@ par(
 
 params <- par(no.readonly = TRUE)
 
+# table styling
+nice_table <- function(data) {
+  kable(data) %>% kable_classic(
+    full_width = FALSE, position="left", font_size=14)
+}
+
+# data input
 abalone <- read.csv("abalone.csv")
 
 # list of just the numerical variables
@@ -63,7 +71,7 @@ cols <- colnames(abalone)[-1]
 Statistical summary for each numerical variable.
 
 ```{r}
-kable(summary(abalone[cols])) %>% kable_styling(full_width=TRUE, font_size = 11)
+nice_table(summary(abalone[cols])) %>% kable_styling(full_width = TRUE)
 ```
 
 Minimum height is 0. This is impossible. Count how many times this occurs in the data.
@@ -116,7 +124,7 @@ boxplots <- function(data, colnames, pars, outfile) {
 
 ```{r}
 outliers <- boxplots(abalone, cols, params, "1.2.pdf")
-kable(outliers) %>% kable_styling(position="center", full_width=FALSE)
+nice_table(outliers)
 ```
 ![](1.2.pdf){width="100%" height="500"}
 
@@ -167,11 +175,12 @@ density_charts(abalone, cols, params, "1.4.pdf")
 mvn_test <- mvn(abalone[cols], mvnTest = "mardia", univariateTest = "SW")
 ```
 
-```{r echo=FALSE}
-kable(mvn_test$multivariateNormality %>% select(-Statistic)) %>% kable_styling(full_width = FALSE, position = "float_left")
-
-kable(mvn_test$univariateNormality %>% select(Variable, "p value", Normality)) %>% kable_styling(full_width = FALSE, position="right")
-
+```{r}
+nice_table(list(
+    mvn_test$multivariateNormality %>% select(-Statistic),
+    mvn_test$univariateNormality %>% select(Variable, "p value", Normality)
+))
+  
 ```
 
 All variables exhibit departures from normality. This should be addressed because the techniques chosen for the upcoming classification and regression tasks assume normality.
@@ -235,7 +244,7 @@ outliers.t <- boxplots(abalone.t, cols, params, "1.6.pdf")
 
 out_compare <- cbind(a=outliers, b=outliers.t)
 colnames(out_compare) <- c("initial", "remaining")
-kable(out_compare) %>% kable_styling(full_width=FALSE)
+nice_table(out_compare)
 ```
 
 ![](1.6.pdf){width="100%" height="500"}
@@ -256,7 +265,7 @@ sk <- data.frame(
 sk[,"skew ratio"] <- round(abs(sk[,3]/sk[,2]),4)
 sk[,"kurt ratio"] <- round(abs(sk[,5]/sk[,4]),4)
 
-kable(sk) %>% kable_styling()
+nice_table(sk)
 ```
 Skewness is now a fraction of its original magnitude for all variables. It is also less than 1 for all variables bar **height**.
 
@@ -279,7 +288,7 @@ density_charts(abalone.t, cols, params, "1.7.pdf")
 
 sk.final <- mvn(abalone.t[cols], mvnTest = "mardia", univariateTest = "SW")$Descriptives %>% select(Skew, Kurtosis) %>% round(4)
 
-kable(sk.final) %>% kable_styling(full_width=FALSE)
+nice_table(sk.final)
 ```
 
 ![](1.7.pdf){width="100%" height="500"}
@@ -303,7 +312,7 @@ LDA (Linear Discriminant Analysis) assumes equal variances. Use Box's M-Test to 
 predictors = c("Length", "Diameter", "Height")
 boxM(abalone.t[,predictors], abalone.t[,"Sex"])
 ```
-Highly significant, meaning the covariances are *not* equal. LDA can still be used, but we will start with QDA (Quadratic Discriminant Analysis), which does not depend on equal variances.
+Highly significant, meaning the covariances are *not* equal. LDA can still be used, but we will also attempt QDA (Quadratic Discriminant Analysis), which does not depend on equal variances.
 
 ### 2.2 Discriminant analysis
 
@@ -318,19 +327,31 @@ cm.da <- function(func, truevals, formula, data) {
     
     return (list(cm=cm, acc=acc))
 }
-
-cm.da(qda, abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t)
 ```
 
-Only half of the cases were predicted correctly. The model is worst at identifying females, but performs better for infants and males.
-
-Now attempt LDA (despite failure to meet variances condition).
 
 ```{r}
+cm.qda <- cm.da(qda, abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t)
 cm.lda <- cm.da(lda, abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t)
-cm.lda
 ```
-LDA performs slightly better, but still not much better than randomly guessing. Again, the model appears to perform worse for female abalone. Let us confirm this quantitatively.
+
+
+```{r}
+nice_cms <- function(cm1, caption1, cm2, caption2) {
+  
+  kables(list(
+    kable(cm1, caption=caption1),
+    kable(cm2, caption=caption2)
+  )) %>% kable_classic(full_width = FALSE, position="left", font_size=14)
+}
+```
+
+
+```{r}
+nice_table(rbind(qda_acc=cm.qda$acc, lda_acc=cm.lda$acc))
+```
+
+Only half of the cases are predicted correctly for both models. Compute accuracy by class.
 
 ```{r}
 acc.by.class <- function(cm) {
@@ -340,22 +361,25 @@ acc.by.class <- function(cm) {
     acclist <- list()
     
     for (c in colnames(cm)) {
-        acclist[c] <- cm[c,c]/sum(cm[c,])
+        acclist[c] <- round(cm[c,c]/sum(cm[c,]), 4)
     }
     
     return (acclist)
 }
-
-acc.by.class(cm.lda$cm)
 ```
-This confirms very poor performance for predicting females. Four-fifths of females are classified *incorrectly*. Approximately two-thirds of males and infants are classified correctly.
 
-It is clear that discriminant analysis is not an acceptable solution.
+
+```{r}
+nice_table(cbind(QDA=acc.by.class(cm.qda$cm),LDA=acc.by.class(cm.lda$cm)))
+  
+```
+This confirms very poor performance for predicting females. Up to four-fifths of females are classified **incorrectly**. Approximately two-thirds of males and infants are classified correctly.
+
+It is clear that discriminant analysis is not an acceptable solution. Attempt SVM.
 
 ### 2.3 Support vector machine
 
-Start with a SVM with a linear kernel.
-
+Attempt radial and linear SVMs.
 ```{r}
 svm.and.cm <- function(truevals, formula, data, kernel, cost, gamma=NULL) {
     
@@ -371,26 +395,22 @@ svm.and.cm <- function(truevals, formula, data, kernel, cost, gamma=NULL) {
     
     return (list(bestmodel=best.svm, cm=cm, acc=acc))
 }
+```
 
+
+```{r}
 svm.lin <- svm.and.cm(abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t,
                       kernel="linear", cost=c(0.1, 1, 10))
 
-svm.lin$acc
-```
-
-Poor overall performance, similar to that of LDA and QDA. Now try SVM with a radial kernel, which generally performs better than linear.
-
-```{r}
 svm.rad <- svm.and.cm(abalone.t$Sex, Sex ~ Length+Diameter+Height, abalone.t,
                       kernel="radial", cost=c(0.1, 1, 10), gamma=c(0.1, 1, 10))
-
-svm.rad$acc
 ```
-Again, very poor performance. Let us examine this by class.
 
 ```{r}
-acc.by.class(svm.rad$cm)
+nice_cms(svm.lin$cm, "Linear", svm.rad$cm, "Radial")
+nice_table(cbind(lin_acc=acc.by.class(svm.lin$cm),rad_acc=acc.by.class(svm.rad$cm)))
 ```
+
 Near-zero accuracy for female abalone. Nearly all of them are classified incorrectly. By contrast, accuracy is acceptable for infants (above 70%) and approaching good (nearly 80%) for males.
 
 ### 2.4 Diagnostics
@@ -415,7 +435,7 @@ sex_boxplots(abalone.t, predictors, params, "2.4.pdf")
 
 ![](2.4.pdf){width="100%" height="500"}
 
-Overlap between F and M for all three predictors. This may explain poor performance of F predictions. Classifiers all seem to favour M over F.
+Overlap between F and M for all three predictors. This may explain poor performance of F predictions. The classifiers favour M over F.
 
 Infant data are largely separated from M and F, explaining why performance for I is consistently better for all classifiers.
 
@@ -447,15 +467,16 @@ svm.rad.I <- svm.and.cm(I.notI$Sex, Sex ~ Length+Diameter+Height, I.notI,
 ```
 
 ```{r}
-acc_table <- rbind(cm.qda.I$acc, cm.lda.I$acc, svm.lin.I$acc, svm.rad.I$acc)
-rownames(acc_table) <- c("QDA", "LDA", "SVM linear", "SVM radial")
-colnames(acc_table) <- c("Accuracy")
-round(acc_table, 4)
+nice_table(round(cbind(
+  qda=cm.qda.I$acc, lda=cm.lda.I$acc, 
+  svm_lin=svm.lin.I$acc, svm_rad=svm.rad.I$acc),4)
+)
 ```
+
 Best performance is SVM with radial kernel, approaching 80% accuracy. Check performance by class.
 
 ```{r}
-svm.rad.I$cm
+nice_table(svm.rad.I$cm)
 ```
 Model is better at identifying non-infants than infants. Therefore, recommend that this model be used to confirm non-infancy rather than infancy.
 
@@ -478,28 +499,23 @@ svm.rad.F <- svm.and.cm(F.notF$Sex, Sex ~ Length+Diameter+Height, F.notF,
 ```
 
 ```{r}
-acc_table <- rbind(cm.qda.F$acc, cm.lda.F$acc, svm.lin.F$acc, svm.rad.F$acc)
-rownames(acc_table) <- c("QDA", "LDA", "SVM linear", "SVM radial")
-colnames(acc_table) <- c("Accuracy")
-round(acc_table, 4)
-```
-SVM with either linear or radial kernel performs best, with nearly 70% accuracy. 
-Compare performance by class, for both SVM models.
-```{r}
-cbind(
-  lin_F=svm.lin.F$cm[,"F"], lin_NotF=svm.lin.F$cm[,"NotF"],
-  rad_F=svm.rad.F$cm[,"F"], rad_NotF=svm.rad.F$cm[,"NotF"]
+nice_table(round(cbind(
+  qda=cm.qda.F$acc, lda=cm.lda.F$acc, 
+  svm_lin=svm.lin.F$acc, svm_rad=svm.rad.F$acc),4)
 )
 ```
-Stunning result. Both SVMs classify all (or nearly all) abalone as not female. Try QDA and LDA instead, despite slightly poorer overall accuracy.
+SVM with either linear or radial kernel performs best, approaching 70% accuracy. Compare performance by class, for both SVM models.
+```{r}
+nice_cms(svm.lin.F$cm, "Linear", svm.rad.F$cm, "Radial")
+```
+Both SVMs classify all (or nearly all) abalone as not female, regardless of true class.
+
+Also check QDA and LDA results, despite slightly poorer overall accuracy.
 
 ```{r}
-cbind(
-  qda_F=cm.qda.F$cm[,"F"], qda_NotF=cm.qda.F$cm[,"NotF"],
-  lda_F=cm.lda.F$cm[,"F"], lda_NotF=cm.lda.F$cm[,"NotF"]
-)
+nice_cms(cm.qda.F$cm, "QDA", cm.lda.F$cm, "LDA")
 ```
-Still very poor performance at identifying females. Most abalone are still classified as NotF, regardless of true class. Do not recommend use of any model studied here.
+Still very poor performance at identifying females. Most abalone are still classified as NotF, regardless of true class. **Do not recommend** use of any model for binary classification of females.
 
 ### 2.7 M vs Not M
 
@@ -520,28 +536,22 @@ svm.rad.M <- svm.and.cm(M.notM$Sex, Sex ~ Length+Diameter+Height, M.notM,
 ```
 
 ```{r}
-acc_table <- rbind(cm.qda.M$acc, cm.lda.M$acc, svm.lin.M$acc, svm.rad.M$acc)
-rownames(acc_table) <- c("QDA", "LDA", "SVM linear", "SVM radial")
-colnames(acc_table) <- c("Accuracy")
-round(acc_table, 4)
-```
-Poorer overall performance than F vs NotF, but still better than randomly guessing. Both SVM models are slightly better than QDA and LDA. Compare performance of SVM models by class.
-
-```{r}
-cbind(
-  lin_M=svm.lin.M$cm[,"M"], lin_NotM=svm.lin.M$cm[,"NotM"],
-  rad_M=svm.rad.M$cm[,"M"], rad_NotM=svm.rad.M$cm[,"NotM"]
+nice_table(round(cbind(
+  qda=cm.qda.M$acc, lda=cm.lda.M$acc, 
+  svm_lin=svm.lin.M$acc, svm_rad=svm.rad.M$acc),4)
 )
 ```
-Similar result as for F vs NotF - nearly all cases are classified as male, regardless of true class. Examine QDA and LDA results instead.
+Poorer overall accuracy than F vs NotF. Both SVM models are slightly better than QDA and LDA. Compare performance of SVM models by class.
 
 ```{r}
-cbind(
-  qda_M=cm.qda.M$cm[,"M"], qda_NotM=cm.qda.M$cm[,"NotM"],
-  lda_M=cm.lda.M$cm[,"M"], lda_NotM=cm.lda.M$cm[,"NotM"]
-)
+nice_cms(svm.lin.M$cm, "Linear", svm.rad.M$cm, "Radial")
 ```
-Better than SVM, but still mostly unable to identify males. Do not recommend any of the models studied here.
+Similar result as for F vs NotF - all cases are classified as male, regardless of true class. Examine QDA and LDA results instead.
+
+```{r}
+nice_cms(cm.qda.M$cm, "QDA", cm.lda.M$cm, "LDA")
+```
+Better than SVM, but still mostly unable to identify males. **Do not recommend** any of the models for binary classification of males.
 
 ## 3. Profitability index
 
@@ -601,11 +611,11 @@ mlr.vi <- mlr(S.vi, mu.vi)
 Check the models' coefficients of determination.
 
 ```{r}
-rbind("rsq for shucked"=mlr.sh$rsq[1,1], "rsq for viscera"=mlr.vi$rsq[1,1])
+nice_table(round(rbind("rsq for shucked"=mlr.sh$rsq[1,1], "rsq for viscera"=mlr.vi$rsq[1,1]), 4))
 ```
 More than 91% of variation in shucked and viscera weights can be explained by the variation in length, diameter and height.
 
-Now confirm performance by comparing actual and predicted weights, using the original data.
+Now confirm performance by comparing actual and predicted weights, using the original data. Departures from the line y = x can be considered a crude visualisation of residuals.
 
 ```{r}
 predict_one <- function(b, coeffs, datavals) {
@@ -635,15 +645,17 @@ sh.pred <- predict_all(mlr.sh, cols.sh %>% select(-Shucked.weight))
 
 vi.actual <- cols.vi$Viscera.weight
 vi.pred <- predict_all(mlr.vi, cols.vi %>% select(-Viscera.weight))
+```
 
+```{r}
 plot_lr(sh.actual, sh.pred, vi.actual, vi.pred, params, "3.2.pdf")
 ```
 
 ![](3.2.pdf){width="100%" height="500"}
 
-Very good agreement between predicted and actual values. However, to eliminate any impacts of multicollinearity, it is worth trying PCA (principal component analysis) to obtain uncorrelated predictors.
+Very good agreement between predicted and actual values. However, to eliminate any impacts of multicollinearity, it may be worth trying PCA (principal component analysis) to obtain uncorrelated predictors.
 
-### 3.3 MLR with PCs
+### 3.3 PCs as predictors
 
 First obtain principal components, using only S and mu for predictors.
 ```{r}
@@ -661,13 +673,15 @@ for (i in 1:p) {
   PCs <- rbind(PCs, eig$vectors[,i])
   var_conts <- c(var_conts, vars[i]/var_total * 100)
 }
+```
 
-data.frame(PCs, var_conts, row.names = c("PC1", "PC2", "PC3"))
+```{r}
+nice_table(data.frame(PCs, var_conts, row.names = c("PC1", "PC2", "PC3")))
 ```
 
 First PC accounts for 98.6% of variance. No need to consider any additional components. Therefore model will be SLR (simple linear regression) involving one explanatory variable (the PC), and one response variable (shucked or viscera weight, regressed one at a time).
 
-Compute values for new PC variable.
+Compute PC values for new PC variable.
 ```{r}
 one_pc_val <- function(coeffs, datavals) {
   return (coeffs %*% datavals)
@@ -693,7 +707,6 @@ cor.vi <- cor(cols.vi$Viscera.weight, pc_vals)
 
 Perform SLR separately for shucked and viscera weights.
 ```{r}
-
 slr <- function(mean_x, mean_y, sd_x, sd_y, r) {
   
   b <- r * sd_y/sd_x
@@ -706,7 +719,9 @@ predict_one_slr <- function(slr, xval) {
   
   return (slr$a + slr$b * xval)
 }
+```
 
+```{r}
 slr.sh <- slr(mean.pcs, mean.sh, sd.pcs, sd.sh, cor.sh)
 slr.vi <- slr(mean.pcs, mean.vi, sd.pcs, sd.vi, cor.vi)
 ```
@@ -714,24 +729,29 @@ slr.vi <- slr(mean.pcs, mean.vi, sd.pcs, sd.vi, cor.vi)
 Check the models' coefficients of determination. Also use original data to confirm performance.
 
 ```{r}
-rbind("rsq for shucked"=cor.sh**2, "rsq for viscera"=cor.vi**2)
+nice_table(round(
+  rbind("rsq for shucked"=cor.sh**2, "rsq for viscera"=cor.vi**2), 4)
+)
 ```
 
 ```{r}
-
 sh.pred <- sapply(pc_vals, predict_one_slr, slr=slr.sh, simplify=TRUE)
 vi.pred <- sapply(pc_vals, predict_one_slr, slr=slr.vi, simplify=TRUE)
+```
 
+```{r}
 plot_lr(sh.actual, sh.pred, vi.actual, vi.pred, params, "3.3.pdf")
 ```
 
-Visually similar to MLR. Very good agreement between predicted and actual values. Coefficient of determination is slightly better for MLR. Therefore, recommend MLR with original variables.
+![](3.3.pdf){width="100%" height="500"}
+
+Visually similar to other MLR with three predictors. Very good agreement between predicted and actual values. Coefficient of determination is slightly better for MLR. Therefore, recommend MLR.
 
 ### 3.4 Prediction interval
 
 Develop function that predicts value of an abalone with a prediction interval.
 
-First define auxilliary functions.
+First define auxiliary functions.
 ```{r}
 
 # compute prediction interval for response variable (transformed), given:
@@ -754,7 +774,14 @@ PI <- function(x, sigii, mlr, alpha) {
   
   yhat <- predict_one(mlr$b, mlr$coeffs, x)
   low <- yhat - sqrt(term1 * term2 * term3)
-  high <- yhat + sqrt(term1 * term2 * term3) 
+  high <- yhat + sqrt(term1 * term2 * term3)
+  
+  # lower bound of transformed weight cannot be <= 0
+  # 0.1 is the smallest weight observed in the dataset
+  # so set the lower PI bound to sqrt(0.1) i.e. the transformed weight value
+  if (low <= 0) {
+    low <- sqrt(0.1)
+  }
   
   return (list(yhat=yhat, low=low, high=high))
 }
@@ -763,7 +790,7 @@ PI <- function(x, sigii, mlr, alpha) {
 # - predicted shucked and viscera weights
 # - cost per gram, for shucked and viscera
 calc_price <- function(sh.pred, vi.pred, v.sh, v.vi) {
-  sh.pred * v.sh + vi.pred * v.vi
+  as.numeric(sh.pred * v.sh + vi.pred * v.vi)
 }
 
 # to assist in transforming predictor variables
@@ -771,7 +798,6 @@ reflect_one <- function(val, maxval) {
   maxval + 1 - val
 }
 ```
-
 
 Price prediction function; also returns prediction interval.
 ```{r}
@@ -792,13 +818,32 @@ est_value <- function(len, diam, height, v.sh, v.vi, alpha=0.05) {
   sh.pred <- PI(x, var(abalone.t$Shucked.weight), mlr.sh, alpha)
   vi.pred <- PI(x, var(abalone.t$Viscera.weight), mlr.vi, alpha)
   
-  # compute predicted price, plus floor and ceiling (UNtransformed)
+  # compute predicted price, plus floor and ceiling
+  # back-transformed to original units
   val <- calc_price(sh.pred$yhat**2, vi.pred$yhat**2, v.sh, v.vi)
   low.val <- calc_price(sh.pred$low**2, vi.pred$low**2, v.sh, v.vi)
   high.val <- calc_price(sh.pred$high**2, vi.pred$high**2, v.sh, v.vi)
   
-  return (list(round(val,2), round(low.val,2), round(high.val,2)))
+  return (list(price=round(val,2), PI.low=round(low.val,2),
+               PI.high=round(high.val,2)))
 }
 ```
+
+Test cases. Assume value per gram (both shucked and viscera) is $0.10. Set prediction interval to 90% (alpha = 0.1).
+
+NOTE: Due to back-transformation of predicted weights, PI will *not* be symmetrical about the predicted price.
+```{r}
+# try min, median and max values from dataset
+low_test <- est_value(15, 11, 2, .1, .1, 0.1)
+median_test <- est_value(109, 85, 28, .1, .1, 0.1)
+high_test <- est_value(163, 130, 226, .1, .1, 0.1)
+```
+
+```{r}
+nice_table(data.frame(cbind(low_test, median_test, high_test), row.names = c("price", "PI.low", "PI.high")))
+
+```
+
+These figures are all plausible.
 
 
