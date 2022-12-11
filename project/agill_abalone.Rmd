@@ -862,3 +862,5 @@ nice_table(data.frame(
   row.names = c("price", "PI.low", "PI.high")))
 ```
 \
+
+

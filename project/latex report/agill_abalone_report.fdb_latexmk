@@ -1,20 +1,25 @@
 # Fdb version 3
-["biber agill_abalone_report"] 1670765706 "agill_abalone_report.bcf" "agill_abalone_report.bbl" "agill_abalone_report" 1670766204
+["biber agill_abalone_report"] 1670782883 "agill_abalone_report.bcf" "agill_abalone_report.bbl" "agill_abalone_report" 1670790421
   "ag_bib.bib" 1670765698 316 a10b245090c74e34748684531e461019 ""
-  "agill_abalone_report.bcf" 1670766204 107009 c346313dd86ae288b67e913ee8206655 "pdflatex"
+  "agill_abalone_report.bcf" 1670790420 107009 c346313dd86ae288b67e913ee8206655 "pdflatex"
   (generated)
   "agill_abalone_report.bbl"
   "agill_abalone_report.blg"
-["pdflatex"] 1670766202 "g:/My Drive/Data Science/UNSW/Multivariate Analysis 5855/Assignments/project/latex report/agill_abalone_report.tex" "agill_abalone_report.pdf" "agill_abalone_report" 1670766204
-  "agill_abalone_report.aux" 1670766204 427 62618458f64c778f44bc64e2f23564c3 "pdflatex"
-  "agill_abalone_report.bbl" 1670765709 1786 4104fbe953c5188c6ddc805dc0910d5c "biber agill_abalone_report"
-  "agill_abalone_report.run.xml" 1670766204 2463 bf0ac40cf71e388905b775d13046c609 "pdflatex"
-  "agill_abalone_report.tex" 1670766200 2436 464f6807c4c0c3856fe3e0785344bba3 ""
+["pdflatex"] 1670790419 "g:/My Drive/Data Science/UNSW/Multivariate Analysis 5855/Assignments/project/latex report/agill_abalone_report.tex" "agill_abalone_report.pdf" "agill_abalone_report" 1670790421
+  "..//1.3.png" 1670730465 39992 95057afecc3b0749985b954d169cf9ce ""
+  "..//1.4.pdf" 1670730475 25191 7fcaf4e5d416246b4811cc5c8129d9ab ""
+  "..//1.7.pdf" 1670730531 26779 e815801b6016a6436f13c17e98b2da6f ""
+  "..//2.4.pdf" 1670745316 6510 ffaaa822803917626d8f8b5d989402f5 ""
+  "agill_abalone_report.aux" 1670790420 2702 2ed420d1e2d234dc962e9bd27d4db2d2 "pdflatex"
+  "agill_abalone_report.bbl" 1670782885 1786 4104fbe953c5188c6ddc805dc0910d5c "biber agill_abalone_report"
+  "agill_abalone_report.run.xml" 1670790420 2463 bf0ac40cf71e388905b775d13046c609 "pdflatex"
+  "agill_abalone_report.tex" 1670790411 12957 493f5d697354dad3cd24d39a6bae73dc ""
   "c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc" 1663052593 2327 9d6df24f9c4f7368395224341a95523a ""
   "c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc" 1663052593 3031 6c4d3515bf7115d8518af1c9ab97ca44 ""
   "c:/texlive/2022/texmf-dist/fonts/map/fontname/texfonts.map" 1663051914 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/cm/cmr10.tfm" 1663051240 1296 45809c5a464d5f32c8f98ba97c1bb47f ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/lm/lmex10.tfm" 1663052593 992 ce925c9346c7613270a79afbee98c070 ""
+  "c:/texlive/2022/texmf-dist/fonts/tfm/public/lm/lmmi10.tfm" 1663052593 1528 6d36b2385e0ca062a654de6ac59cb34f ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/lm/lmmi12.tfm" 1663052593 1524 753b192b18f2991794f9d41a8228510b ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/lm/lmmi6.tfm" 1663052593 1512 94a3fd88c6f27dbd9ecb46987e297a4e ""
   "c:/texlive/2022/texmf-dist/fonts/tfm/public/lm/lmmi8.tfm" 1663052593 1520 a3fe5596932db2db2cbda300920dd4e9 ""
@@ -87,7 +92,7 @@
   "c:/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1663054854 4635069 7677ee69604aae14ed48b153c111a7f7 ""
   "c:/texlive/2022/texmf-var/web2c/pdftex/pdflatex.fmt" 1663054970 3059215 fcaf1f05c104288b1314506e25772cff ""
   "c:/texlive/2022/texmf.cnf" 1663054837 713 e69b156964470283e0530f5060668171 ""
-  "g:/My Drive/Data Science/UNSW/Multivariate Analysis 5855/Assignments/project/latex report/agill_abalone_report.tex" 1670766200 2436 464f6807c4c0c3856fe3e0785344bba3 ""
+  "g:/My Drive/Data Science/UNSW/Multivariate Analysis 5855/Assignments/project/latex report/agill_abalone_report.tex" 1670790411 12957 493f5d697354dad3cd24d39a6bae73dc ""
   (generated)
   "agill_abalone_report.aux"
   "agill_abalone_report.bcf"
