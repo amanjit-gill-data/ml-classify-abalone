@@ -34,7 +34,7 @@
     An enquiry has been made as to the potential use of lightweight software, installed on diving equipment, to help abalone farmers to quickly assess whether an abalone should be harvested or left in the water. There are two main parameters in making such an assessment:
 
     \begin{itemize}
-        \item \textbf{Sex.} Female abalone are more valuable, because their eggs are used to reduce water toxicity \parencite{atlantic}. On the other hand, mature males may be sought, to ensure that enough females are left to allow reproduction to occur.
+        \item \textbf{Sex.} Female abalone are more valuable, because their eggs are used to reduce water toxicity (XXXX). On the other hand, mature males may be sought, to ensure that enough females are left to allow reproduction to occur.
         \item \textbf{Age.} Infant abalone (that have not yet reached sexual maturity) should be avoided, because their small size yields less meat. In addition, they should be allowed to reach maturity and contribute to reproduction.
     \end{itemize} 
 
@@ -215,7 +215,7 @@
             M vs Not M  & SVM radial    & 0.6824 \\
             \hline
         \end{tabular}
-        \caption{Accuracy of Three-Way Classifiers}
+        \caption{Accuracy of Binary Classifiers}
         \label{binary}
     \end{table}
 
@@ -243,15 +243,65 @@
 
     Unfortunately, this means that the objective to use non-intrusive measurements to predict the sex of abalone cannot be met, because males and females are not differentiable by their physical proportions; rather, the best  method of determining sex is to examine the colour of the abalone's underside (XXXX). 
 
-    \section{Estimating Price}
+    \section{Estimating Value}
 
     Depending on species and habitat, smaller abalone tend to be younger in age, and larger abalone tend to be older. Therefore, by returning smaller abalone to the water and allowing them to mature and reproduce, farmers can ensure sustainability of abalone populations, while maximising their own profits by selectively harvesting larger (older) abalone with more meat.
 
-    To this end, an algorithm has been developed by which a farmer can quickly predict the shucked and viscera weights of an abalone, based only on its measurements, and thus estimate the market value.
+    To this end, a function has been developed by which a farmer can quickly predict the shucked and viscera weights of an abalone, based only on its measurements, and thus estimate the market value. A \textbf{multiple linear regression} (MLR) model has been fed summaries of the supplied (and transformed) data for length, diameter, height and the two weights of interest. The resulting equations for the prediction of the shucked and viscera weights are:
 
-    Using the supplied data on previously harvested abalone, a \textbf{multiple linear regression} (MLR) model has been fed the measurements for length, diameter and height. The resulting equations that allow prediction of the shucked and viscera weights are:
+    $$ Shucked\_weight\_t = 15.768 - 1.14*Length\_t - 0.432*Diameter\_t + 1.164*Height\_t $$
+    $$ Viscera\_weight\_t = 7.145 - 0.698*Length\_t - 0.256*Diameter\_t + 1.691*Height\_t $$
 
-    
+    Figure \ref{mlr} shows that there is very good agreement between actual abalone weights and the weights predicted by these equations. An alternative model involving \textbf{principal component analysis} (XXXX) also yields good results, but the above MLR equations are slightly superior.
+
+    \begin{figure}[ht]
+        \centering
+        \includegraphics[width=\textwidth]{3.2.pdf}
+        \caption{Input Variables by Sex Class}
+        \label{mlr}
+    \end{figure}
+
+    The weights in the supplied data were originally transformed by applying the square root, so the opposite operation (square) is applied to convert them to their original units:
+
+    $$ Shucked\_weight = Shucked\_weight\_t ^ 2 $$
+    $$ Viscera\_weight = Viscera\_weight\_t ^ 2 $$
+
+    Once the weights have been predicted and converted to their original units, the market price for one abalone is estimated by:
+
+    $$ Est\_Price = Shucked\_weight * Price\_per\_gram_{sh} + Viscera\_weight * Price\_per\_gram_{vi} $$
+
+    This price estimate is accompanied by a prediction interval, the bounds of which are determined by the end user (e.g. for a 90\% prediction interval, alpha is set to 0.1). The methodolgy for computing this prediction interval is given in XXXX. The final function thus has inputs and outputs as shown in Table \ref{function}.
+
+    \begin{table}[ht]
+        \centering
+        \begin{tabular}{|c|c|}
+            \hline
+            Inputs & Outputs \\
+            \hline
+            length (mm) & estimated price (\$) \\
+            diameter (mm) & lower bound (\$) \\
+            height (mm) & upper bound (\$) \\
+            price/gram, shucked (\$) & \\
+            price/gram, viscera (\$) & \\
+            alpha (default 0.05) & \\
+            \hline
+        \end{tabular}
+        \caption{Inputs and Outputs of Price Estimator}
+        \label{function}
+    \end{table}
+
+    \section*{Conclusion}
+
+    The aims of this study have partially been met. The first imperative, which was to find non-intrusive means of predicting abalone sex and infancy status, has not been successful. While the models are able to determine that an abalone is \textit{not} an infant, they fail at positively identifying infants, females and males.
+
+    The second imperative of this study has been successful. An accurate and computationally inexpensive function has been developed for predicting the weights and market price of an abalone, based only on its dimensions.
+
+    Using the supplied data alone, it is currently not possible to balance competing interests in sustainability and profitability by selectively harvesting for sex. However, there is scope, through the infant vs non-infant classifier in conjunction with the price estimation function, to improve farming practices by selectively harvesting larger and more mature abalone.
+
+
+
+
+
 
 
 
