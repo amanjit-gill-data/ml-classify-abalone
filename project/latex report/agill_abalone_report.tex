@@ -1,0 +1,57 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage[margin=1in]{geometry}
+
+\usepackage{lmodern}
+\fontfamily{lmdh}\selectfont
+
+\usepackage{graphicx}
+\graphicspath{{../}}
+
+\usepackage{titlesec}
+\titleformat*{\section}{\large\bfseries}
+
+\usepackage{caption}
+\captionsetup[figure]{font={small, bf}}
+
+\usepackage{subcaption}
+
+\usepackage[style=authoryear-ibid,backend=biber]{biblatex}
+\renewcommand*{\nameyeardelim}{\addcomma\space}
+\addbibresource{ag_bib.bib}
+
+\usepackage{verbatim}
+
+\title{\large\bfseries Classification and Pricing of Farmed Abalone}
+\author{\normalsize A. Gill}
+\date{\small \today}
+
+\begin{document}
+    
+    \maketitle
+
+    \section*{Introduction}    
+      
+    An enquiry has been made as to the potential use of lightweight software, installed on diving equipment, to help abalone farmers to quickly assess whether an abalone should be harvested or left in the water. There are two main parameters in making such an assessment:
+
+    \begin{itemize}
+        \item\textbf{Sex.} Female abalone are more valuable, because their eggs are used to reduce water toxicity \parencite{atlantic}. On the other hand, mature males may be sought, to ensure that enough females are left to allow reproduction to occur.
+        \item\textbf{Age.} Infant abalone (that have not yet reached sexual maturity) should be avoided, because their small size yields less meat. In addition, they should be allowed to reach maturity and contribute to reproduction.
+    \end{itemize} 
+
+    The aim is to use non-intrusive measurements - length, diameter and height - to predict an abalone's sex and infancy status, as well as estimate its weight (and thus market value), allowing farmers to return rejected abalone to the water without having harmed them. Data modelling techniques have been used to develop predictive tools for this purpose.
+
+    \section{Exploratory Analysis}
+
+    The modelling techniques to be used depend on the supplied data meeting certain requirements:
+
+    \begin{itemize}
+        \item\textbf{Normality}. When the probability of each value occurring is graphed against the value itself, the curve should form the classical "bell" shape expected of "normal" data. This is desirable because the mathematical procedures underpinning the techniques to be used assume the use of "normal" data.
+        \item 
+    \end{itemize}
+
+
+
+    \subsection{Outliers}
+
+\end{document}
+

@@ -562,7 +562,7 @@ Better than SVM, but still mostly unable to identify males. **Do not recommend**
 
 **Selected model**: None.
 
-## 3. Profitability index
+## 3. Profitability Index
 
 Proposed methods should rely on data summaries, not the data.
 
