@@ -2,10 +2,10 @@
 title: "Classification and Pricing of Farmed Abalone"
 author: "Amanjit Gill"
 date: "2022-12-12"
-output: 
-    html_notebook:
-        theme: flatly
-        toc: true
+output:
+  html_notebook:
+    theme: flatly
+    toc: yes
 ---
 
 ```{css echo=FALSE}
