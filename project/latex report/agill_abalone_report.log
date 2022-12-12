@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.9.13)  12 DEC 2022 10:15
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.9.13)  12 DEC 2022 11:40
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -495,60 +495,61 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <8> on input line 30.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <6> on input line 30.
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 37.
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 41.
  (c:/texlive/2022/texmf-dist/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2015/05/01 v1.6.1 Font defs for Latin Modern
 )
 <..//1.4.pdf, id=1, 505.89pt x 505.89pt>
 File: ..//1.4.pdf Graphic file (type pdf)
 <use ..//1.4.pdf>
-Package pdftex.def Info: ..//1.4.pdf  used on input line 70.
+Package pdftex.def Info: ..//1.4.pdf  used on input line 63.
 (pdftex.def)             Requested size: 452.9679pt x 452.97328pt.
  [1
 
-{c:/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [2 <..//1.4.pdf>]
-<..//1.3.png, id=19, 1003.75pt x 1003.75pt>
+{c:/texlive/2022/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
+<..//1.3.png, id=11, 1003.75pt x 1003.75pt>
 File: ..//1.3.png Graphic file (type png)
 <use ..//1.3.png>
-Package pdftex.def Info: ..//1.3.png  used on input line 89.
+Package pdftex.def Info: ..//1.3.png  used on input line 81.
 (pdftex.def)             Requested size: 452.9679pt x 452.96988pt.
- [3 <..//1.3.png>]
+ [2 <..//1.4.pdf>]
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 104.
-<..//1.7.pdf, id=24, 505.89pt x 505.89pt>
+(Font)              <10.95> on input line 94.
+<..//1.7.pdf, id=20, 505.89pt x 505.89pt>
 File: ..//1.7.pdf Graphic file (type pdf)
 <use ..//1.7.pdf>
-Package pdftex.def Info: ..//1.7.pdf  used on input line 124.
+Package pdftex.def Info: ..//1.7.pdf  used on input line 114.
 (pdftex.def)             Requested size: 452.9679pt x 452.97328pt.
-<..//2.4.pdf, id=25, 505.89pt x 505.89pt>
+ [3 <..//1.3.png>] [4 <..//1.7.pdf>]
+<..//2.4.pdf, id=33, 505.89pt x 505.89pt>
 File: ..//2.4.pdf Graphic file (type pdf)
 <use ..//2.4.pdf>
-Package pdftex.def Info: ..//2.4.pdf  used on input line 180.
+Package pdftex.def Info: ..//2.4.pdf  used on input line 168.
 (pdftex.def)             Requested size: 452.9679pt x 452.97328pt.
- [4] [5 <..//1.7.pdf>] [6]
-<..//3.2.pdf, id=40, 650.43pt x 289.08pt>
+ [5] [6 <..//2.4.pdf>]
+<..//3.2.pdf, id=47, 650.43pt x 289.08pt>
 File: ..//3.2.pdf Graphic file (type pdf)
 <use ..//3.2.pdf>
-Package pdftex.def Info: ..//3.2.pdf  used on input line 259.
+Package pdftex.def Info: ..//3.2.pdf  used on input line 247.
 (pdftex.def)             Requested size: 452.9679pt x 201.32243pt.
- [7 <..//2.4.pdf>] [8 <..//3.2.pdf>] (./agill_abalone_report.aux)
+ [7 <..//3.2.pdf>] [8] (./agill_abalone_report.aux)
 Package logreq Info: Writing requests to 'agill_abalone_report.run.xml'.
 \openout1 = `agill_abalone_report.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 11668 strings out of 475075
- 222627 string characters out of 5783001
- 987551 words of memory out of 5000000
- 32953 multiletter control sequences out of 15000+600000
- 506466 words of font info for 50 fonts, out of 8000000 for 9000
+ 11666 strings out of 475075
+ 222600 string characters out of 5783001
+ 988551 words of memory out of 5000000
+ 32952 multiletter control sequences out of 15000+600000
+ 502248 words of font info for 49 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  60i,8n,68p,785b,801s stack positions out of 10000i,1000n,20000p,200000b,200000s
-{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}<c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx12.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmmi10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmmi8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmri10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
-Output written on agill_abalone_report.pdf (8 pages, 691647 bytes).
+{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{c:/texlive/2022/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}<c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmbx12.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmmi10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmmi8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr10.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmr8.pfb><c:/texlive/2022/texmf-dist/fonts/type1/public/lm/lmsy10.pfb>
+Output written on agill_abalone_report.pdf (8 pages, 678946 bytes).
 PDF statistics:
- 104 PDF objects out of 1000 (max. 8388607)
- 66 compressed objects within 1 object stream
+ 99 PDF objects out of 1000 (max. 8388607)
+ 63 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  26 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -438,9 +438,7 @@ Overlap between F and M for all three predictors. This may explain poor performa
 
 Infant data are largely separated from M and F, explaining why performance for I is consistently better for all classifiers.
 
-Conclusion: **Do not recommend** three-way classification between I, F and M. Instead, use this model for identifying infants and males only.
-
-**Selected model**: SVM Radial with C=`r svm.rad$bestmodel$cost` and gamma=`r svm.rad$bestmodel$gamma`.
+Conclusion: **Do not recommend** three-way classification between I, F and M.
 
 ### 2.5 I vs Not I
 
