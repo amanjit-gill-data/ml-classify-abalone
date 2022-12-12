@@ -2351,6 +2351,18 @@
     <bcf:datasource type="file" datatype="bibtex" glob="false">ag_bib.bib</bcf:datasource>
   </bcf:bibdata>
   <bcf:section number="0">
+    <bcf:citekey order="1" intorder="1">assumptions</bcf:citekey>
+    <bcf:citekey order="2" intorder="1">transformations</bcf:citekey>
+    <bcf:citekey order="3" intorder="1">assumptions</bcf:citekey>
+    <bcf:citekey order="4" intorder="1">transformations</bcf:citekey>
+    <bcf:citekey order="5" intorder="1">assumptions</bcf:citekey>
+    <bcf:citekey order="6" intorder="1">da</bcf:citekey>
+    <bcf:citekey order="7" intorder="1">svm</bcf:citekey>
+    <bcf:citekey order="8" intorder="1">atlantic</bcf:citekey>
+    <bcf:citekey order="9" intorder="1">nsw</bcf:citekey>
+    <bcf:citekey order="10" intorder="1">pca</bcf:citekey>
+    <bcf:citekey order="11" intorder="1">pi</bcf:citekey>
+    <bcf:citekey order="12" intorder="1" nocite="1">*</bcf:citekey>
   </bcf:section>
   <!-- SORTING TEMPLATES -->
   <bcf:sortingtemplate name="nyt">
@@ -2382,4 +2394,13 @@
     </bcf:sort>
   </bcf:sortingtemplate>
   <!-- DATALISTS -->
+  <bcf:datalist section="0"
+                name="nyt/global//global/global"
+                type="entry"
+                sortingtemplatename="nyt"
+                sortingnamekeytemplatename="global"
+                labelprefix=""
+                uniquenametemplatename="global"
+                labelalphanametemplatename="global">
+  </bcf:datalist>
 </bcf:controlfile>
